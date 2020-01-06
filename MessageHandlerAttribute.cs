@@ -6,6 +6,7 @@ namespace AIT.Devices
     {
         public MessageHandlerAttribute()
         {
+            IsDefault = true;
         }
 
         public MessageHandlerAttribute(bool isDefault)

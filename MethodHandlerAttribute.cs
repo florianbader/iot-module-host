@@ -6,6 +6,7 @@ namespace AIT.Devices
     {
         public MethodHandlerAttribute()
         {
+            IsDefault = true;
         }
 
         public MethodHandlerAttribute(bool isDefault)
