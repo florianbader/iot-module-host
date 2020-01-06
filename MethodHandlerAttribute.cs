@@ -4,7 +4,11 @@ namespace AIT.Devices
 {
     public class MethodHandlerAttribute : Attribute
     {
-        public MethodHandlerAttribute(bool isDefault = true)
+        public MethodHandlerAttribute()
+        {
+        }
+
+        public MethodHandlerAttribute(bool isDefault)
         {
             IsDefault = isDefault;
         }
