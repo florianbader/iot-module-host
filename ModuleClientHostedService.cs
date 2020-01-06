@@ -28,28 +28,38 @@ namespace AIT.Devices
 
         public async Task StartAsync(CancellationToken cancellationToken)
         {
-            var settings = _serviceProvider.GetServices<ITransportSettings>().ToArray();
-            if ((settings?.Length ?? 0) == 0)
+            try
             {
-                var mqttSetting = new MqttTransportSettings(TransportType.Mqtt_Tcp_Only);
-                settings = new[] { mqttSetting };
+                var settings = _serviceProvider.GetServices<ITransportSettings>().ToArray();
+                if ((settings?.Length ?? 0) == 0)
+                {
+                    var mqttSetting = new MqttTransportSettings(TransportType.Mqtt_Tcp_Only);
+                    settings = new[] { mqttSetting };
+
+                    _logger.LogInformation($"No transport settings found, using mqtt over tcp");
+                }
+
+                var azureModuleClient = await AzureModuleClient.CreateFromEnvironmentAsync(settings);
+
+                // TODO: Figure out a better way to register the module client after HostBuilder was built
+                _moduleClient = _serviceProvider.GetService<IModuleClient>();
+                (_moduleClient as ModuleClient).SetInstance(azureModuleClient);
+
+                await _moduleClient.OpenAsync();
+
+                _logger.LogInformation("IoT Hub module client initialized.");
+
+                await ConfigureStartupAsync();
+
+                await ConfigureMethodsAsync();
+
+                await ConfigureMessagesAsync();
             }
-
-            var azureModuleClient = await AzureModuleClient.CreateFromEnvironmentAsync(settings);
-
-            await _moduleClient.OpenAsync();
-
-            _logger.LogInformation("IoT Hub module client initialized.");
-
-            // TODO: Figure out a better way to register the module client after HostBuilder was built
-            _moduleClient = _serviceProvider.GetService<IModuleClient>();
-            (_moduleClient as ModuleClient).SetInstance(azureModuleClient);
-
-            await ConfigureStartupAsync();
-
-            await ConfigureMethodsAsync();
-
-            await ConfigureMessagesAsync();
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error occurred on startup");
+                throw;
+            }
         }
 
         private async Task ConfigureMethodsAsync()
@@ -121,6 +131,7 @@ namespace AIT.Devices
 
         private static IEnumerable<Type> GetAssemblyTypes<T>()
         {
+            // TODO: Get types from configured assemblies
             return Assembly.GetEntryAssembly()
                 .GetModules()
                 .SelectMany(m => m.GetTypes())
