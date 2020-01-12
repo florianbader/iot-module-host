@@ -1,6 +1,6 @@
 # IoT Edge Module Generic Host
 
-![Nuget (with prereleases)](https://img.shields.io/nuget/vpre/iot-module-host)
+[![Nuget (with prereleases)](https://img.shields.io/nuget/vpre/iot-module-host)](https://www.nuget.org/packages/iot-module-host/)
 [![Build status](https://dev.azure.com/ait-fb/Public/_apis/build/status/IoT/iot-module-host.NuGet)](https://dev.azure.com/ait-fb/Public/_build/latest?definitionId=52?branchName=master)
 
 IoT Module Host is a generic host implementation for IoT Edge modules. It makes it easier to start a new module implementation by taking away the boilerplate code which is required.
@@ -14,11 +14,12 @@ The solution consists of the following features:
   * connection status change
 * Define message handlers in classes
 * Define method handlers in classes
+* Module client wrapper with interface to make testing easier
 
 ## Getting Started
 
 ### Prerequisites
-[.NET Core 3.0+ SDK](https://www.microsoft.com/net/download/core) must be installed.
+[.NET Core 3.1+ SDK](https://www.microsoft.com/net/download/core) must be installed.
 
 ### Installing
 Install the dotnet-script CLI tool: ``dotnet tool restore``  
