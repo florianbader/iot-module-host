@@ -4,6 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Threading.Tasks;
 
+[assembly: System.Runtime.CompilerServices.InternalsVisibleTo("tests")]
 namespace AIT.Devices
 {
     internal class ConventionalStartup : IStartup
@@ -15,6 +16,12 @@ namespace AIT.Devices
         {
             _type = type ?? throw new ArgumentNullException(nameof(type));
             _instance = Activator.CreateInstance(type);
+        }
+
+        internal ConventionalStartup(Type type, object instance)
+        {
+            _type = type ?? throw new ArgumentNullException(nameof(type));
+            _instance = instance ?? throw new ArgumentNullException(nameof(instance));
         }
 
         public Task ConfigureAsync(IModuleClient moduleClient) =>

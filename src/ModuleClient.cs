@@ -6,6 +6,11 @@ namespace AIT.Devices
     {
         private Microsoft.Azure.Devices.Client.ModuleClient _moduleClient;
 
+        public ModuleClient(Microsoft.Azure.Devices.Client.ModuleClient moduleClient)
+        {
+            _moduleClient = moduleClient;
+        }
+
         public System.Int32 DiagnosticSamplingPercentage { get => _moduleClient.DiagnosticSamplingPercentage; set => _moduleClient.DiagnosticSamplingPercentage = value; }
         public System.UInt32 OperationTimeoutInMilliseconds { get => _moduleClient.OperationTimeoutInMilliseconds; set => _moduleClient.OperationTimeoutInMilliseconds = value; }
         public System.String ProductInfo { get => _moduleClient.ProductInfo; set => _moduleClient.ProductInfo = value; }
@@ -51,9 +56,5 @@ namespace AIT.Devices
         public System.Threading.Tasks.Task<Microsoft.Azure.Devices.Client.MethodResponse> InvokeMethodAsync(System.String deviceId, System.String moduleId, Microsoft.Azure.Devices.Client.MethodRequest methodRequest) => _moduleClient.InvokeMethodAsync(deviceId, moduleId, methodRequest);
         public System.Threading.Tasks.Task<Microsoft.Azure.Devices.Client.MethodResponse> InvokeMethodAsync(System.String deviceId, System.String moduleId, Microsoft.Azure.Devices.Client.MethodRequest methodRequest, System.Threading.CancellationToken cancellationToken) => _moduleClient.InvokeMethodAsync(deviceId, moduleId, methodRequest, cancellationToken);
 
-        internal void SetInstance(Microsoft.Azure.Devices.Client.ModuleClient moduleClient)
-        {
-            _moduleClient = moduleClient ?? throw new System.ArgumentNullException(nameof(moduleClient));
-        }
     }
 }

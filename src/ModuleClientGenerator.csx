@@ -60,11 +60,12 @@ namespace AIT.Devices
     {{
         private Microsoft.Azure.Devices.Client.ModuleClient _moduleClient;
 
-{Generate()}
-        internal void SetInstance(Microsoft.Azure.Devices.Client.ModuleClient moduleClient)
+        public ModuleClient(Microsoft.Azure.Devices.Client.ModuleClient moduleClient)
         {{
-            _moduleClient = moduleClient ?? throw new System.ArgumentNullException(nameof(moduleClient));
+            _moduleClient = moduleClient;
         }}
+
+{Generate()}
     }}
 }}");
 

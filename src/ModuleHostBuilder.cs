@@ -1,10 +1,14 @@
+using AIT.Devices;
+using Microsoft.Azure.Devices.Client.Transport.Mqtt;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using AzureDeviceClient = Microsoft.Azure.Devices.Client;
 
-namespace AIT.Devices
+namespace Microsoft.Extensions.Hosting
 {
     public class ModuleHostBuilder : IHostBuilder
     {
@@ -19,9 +23,7 @@ namespace AIT.Devices
         public ModuleHostBuilder(string[] args)
         {
             _hostBuilder = Host.CreateDefaultBuilder(args)
-                .ConfigureServices(s =>
-                    s.AddHostedService<ModuleClientHostedService>()
-                    .AddSingleton<IModuleClient>(new ModuleClient()))
+                .ConfigureServices(s => s.AddHostedService<ModuleClientHostedService>())
                 .UseConsoleLifetime();
         }
 
@@ -30,25 +32,6 @@ namespace AIT.Devices
 
         public IHostBuilder ConfigureServices(Action<HostBuilderContext, IServiceCollection> configureDelegate) =>
             _hostBuilder.ConfigureServices(configureDelegate);
-
-        public IHostBuilder UseStartup<TStartup>() where TStartup : class
-        {
-            var startup = typeof(IStartup).IsAssignableFrom(typeof(TStartup))
-                ? Activator.CreateInstance<TStartup>() as IStartup
-                : new ConventionalStartup(typeof(TStartup));
-
-            if (startup == null)
-            {
-                throw new InvalidOperationException("Could not create startup implementation");
-            }
-
-            _hostBuilder.ConfigureServices(s =>
-                s.AddSingleton<IStartup>(_ => startup));
-
-            _hostBuilder.ConfigureServices(s => startup.ConfigureServices(s));
-
-            return _hostBuilder;
-        }
 
         public IHost Build() => _hostBuilder.Build();
 
@@ -63,5 +46,58 @@ namespace AIT.Devices
 
         public IHostBuilder ConfigureContainer<TContainerBuilder>(Action<HostBuilderContext, TContainerBuilder> configureDelegate) =>
             _hostBuilder.ConfigureContainer(configureDelegate);
+    }
+
+    public static class ModuleHostBuilderExtensions
+    {
+        public static IHostBuilder UseStartup<TStartup>(this IHostBuilder hostBuilder) where TStartup : class
+        {
+            var startup = typeof(IStartup).IsAssignableFrom(typeof(TStartup))
+                ? Activator.CreateInstance<TStartup>() as IStartup
+                : new ConventionalStartup(typeof(TStartup));
+
+            if (startup == null)
+            {
+                throw new InvalidOperationException("Could not create startup implementation");
+            }
+
+            return hostBuilder.UseStartup(startup);
+        }
+
+        internal static IHostBuilder UseStartup(this IHostBuilder hostBuilder, IStartup startup)
+        {
+            if (startup == null) throw new ArgumentNullException(nameof(startup));
+
+            hostBuilder.ConfigureServices(s => startup.ConfigureServices(s));
+
+            hostBuilder.ConfigureServices(s => s.AddSingleton<IStartup>(_ => startup));
+
+            hostBuilder.ConfigureServices(s =>
+            {
+                if (!s.Any(p => p.ServiceType == typeof(IModuleClient)))
+                {
+                    s.AddSingleton<IModuleClient>(CreateModuleClient);
+                }
+            });
+
+            return hostBuilder;
+        }
+
+        private static IModuleClient CreateModuleClient(IServiceProvider serviceProvider)
+        {
+            var settings = serviceProvider.GetServices<AzureDeviceClient.ITransportSettings>().ToArray();
+            if ((settings?.Length ?? 0) == 0)
+            {
+                var mqttSetting = new MqttTransportSettings(AzureDeviceClient.TransportType.Mqtt_Tcp_Only);
+                settings = new[] { mqttSetting };
+
+                var logger = serviceProvider.GetService<ILogger<ModuleHostBuilder>>();
+                logger.LogInformation($"No transport settings found, using MQTT over TCP.");
+            }
+
+            var azureModuleClient = AzureDeviceClient.ModuleClient.CreateFromEnvironmentAsync()
+                .GetAwaiter().GetResult();
+            return new ModuleClient(azureModuleClient);
+        }
     }
 }

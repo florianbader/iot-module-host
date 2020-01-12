@@ -16,11 +16,10 @@ namespace AIT.Devices
     internal class ModuleClientHostedService : IHostedService
     {
         private readonly IServiceProvider _serviceProvider;
-        private readonly ILogger<ModuleClientHostedService> _logger;
+        private readonly ILogger<ModuleClientHostedService>? _logger;
         private IModuleClient? _moduleClient;
 
-        public ModuleClientHostedService(IServiceProvider serviceProvider,
-            ILogger<ModuleClientHostedService> logger)
+        public ModuleClientHostedService(IServiceProvider serviceProvider, ILogger<ModuleClientHostedService> logger)
         {
             _serviceProvider = serviceProvider;
             _logger = logger;
@@ -30,29 +29,15 @@ namespace AIT.Devices
         {
             try
             {
-                var settings = _serviceProvider.GetServices<ITransportSettings>().ToArray();
-                if ((settings?.Length ?? 0) == 0)
-                {
-                    var mqttSetting = new MqttTransportSettings(TransportType.Mqtt_Tcp_Only);
-                    settings = new[] { mqttSetting };
-
-                    _logger.LogInformation($"No transport settings found, using MQTT over TCP.");
-                }
-
-                var azureModuleClient = await AzureModuleClient.CreateFromEnvironmentAsync(settings);
-
-                // TODO: Figure out a better way to register the module client after HostBuilder was built
-                _moduleClient ??= _serviceProvider.GetService<IModuleClient>();
+                _moduleClient = _serviceProvider.GetService<IModuleClient>();
                 if (_moduleClient == null)
                 {
                     throw new InvalidOperationException("IModuleClient not found.");
                 }
 
-                (_moduleClient as ModuleClient)!.SetInstance(azureModuleClient);
-
                 await _moduleClient.OpenAsync();
 
-                _logger.LogInformation("IoT Hub module client initialized.");
+                _logger?.LogInformation("IoT Hub module client initialized.");
 
                 await ConfigureStartupAsync();
 
@@ -62,7 +47,7 @@ namespace AIT.Devices
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error occurred on startup");
+                _logger?.LogError(ex, "Error occurred on startup");
                 throw;
             }
         }
@@ -79,18 +64,18 @@ namespace AIT.Devices
                 var methodHandlerInstance = Activator.CreateInstance(methodHandlerType, new[] { _moduleClient }) as IMethodHandler;
                 if (methodHandlerInstance == null)
                 {
-                    _logger.LogWarning($"Method handler for type {methodHandlerType.FullName} could not be created.");
+                    _logger?.LogWarning($"Method handler for type {methodHandlerType.FullName} could not be created.");
                     continue;
                 }
 
                 if (methodHandlerAttribute.IsDefault)
                 {
-                    _logger.LogTrace($"Registering method handler {methodHandlerType.FullName} as default...");
+                    _logger?.LogTrace($"Registering method handler {methodHandlerType.FullName} as default...");
                     await _moduleClient!.SetMethodDefaultHandlerAsync((methodRequest, _) => methodHandlerInstance.HandleMethodAsync(methodRequest), null!);
                 }
                 else
                 {
-                    _logger.LogTrace($"Registering method handler {methodHandlerType.FullName} for method {methodHandlerAttribute.MethodName}...");
+                    _logger?.LogTrace($"Registering method handler {methodHandlerType.FullName} for method {methodHandlerAttribute.MethodName}...");
                     await _moduleClient!.SetMethodHandlerAsync(methodHandlerAttribute.MethodName,
                         (message, _) => methodHandlerInstance.HandleMethodAsync(message), null!);
                 }
@@ -102,7 +87,7 @@ namespace AIT.Devices
             var startup = _serviceProvider.GetService<IStartup>();
             if (startup == null)
             {
-                _logger.LogWarning("No startup implementation found.");
+                _logger?.LogWarning("No startup implementation found.");
                 return;
             }
 
@@ -127,18 +112,18 @@ namespace AIT.Devices
                 var messageHandlerInstance = Activator.CreateInstance(messageHandlerType, new[] { _moduleClient }) as IMessageHandler;
                 if (messageHandlerInstance == null)
                 {
-                    _logger.LogWarning($"Message handler for type {messageHandlerType.FullName} could not be created.");
+                    _logger?.LogWarning($"Message handler for type {messageHandlerType.FullName} could not be created.");
                     continue;
                 }
 
                 if (messageHandlerAttribute.IsDefault)
                 {
-                    _logger.LogTrace($"Registering message handler {messageHandlerType.FullName} as default...");
+                    _logger?.LogTrace($"Registering message handler {messageHandlerType.FullName} as default...");
                     await _moduleClient!.SetMessageHandlerAsync((message, _) => messageHandlerInstance.HandleMessageAsync(message), null!);
                 }
                 else
                 {
-                    _logger.LogTrace($"Registering message handler {messageHandlerType.FullName} for input {messageHandlerAttribute.InputName}...");
+                    _logger?.LogTrace($"Registering message handler {messageHandlerType.FullName} for input {messageHandlerAttribute.InputName}...");
                     await _moduleClient!.SetInputMessageHandlerAsync(messageHandlerAttribute.InputName,
                         (message, _) => messageHandlerInstance.HandleMessageAsync(message), null!);
                 }

@@ -1,5 +1,5 @@
 // THIS DOCUMENT IS GENERATED, ALL CHANGES WILL GET OVERWRITTEN!
-namespace AIT.Devices 
+namespace AIT.Devices
 {
     public interface IModuleClient
     {
