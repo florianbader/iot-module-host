@@ -1,8 +1,6 @@
-using System;
 using System.Threading.Tasks;
 using AIT.Devices;
 using Microsoft.Azure.Devices.Client;
-using Microsoft.Azure.Devices.Client.Transport.Mqtt;
 using Microsoft.Azure.Devices.Shared;
 using Microsoft.Extensions.DependencyInjection;
 using Serilog;
@@ -22,7 +20,6 @@ namespace Starter
             Log.Information("Configure");
             return Task.CompletedTask;
         }
-
 
         public void ConfigureServices(IServiceCollection services)
         {

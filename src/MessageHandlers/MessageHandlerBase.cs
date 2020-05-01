@@ -13,6 +13,9 @@ namespace AIT.Devices.MessageHandlers
     {
         private readonly string _name;
 
+        /// <summary>
+        /// Gets the logger.
+        /// </summary>
         protected ILogger Logger { get; }
 
         /// <summary>
