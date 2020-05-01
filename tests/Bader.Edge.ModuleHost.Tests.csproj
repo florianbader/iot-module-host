@@ -17,7 +17,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\src\iot-module-host.csproj" />
+    <ProjectReference Include="..\src\Bader.Edge.ModuleHost.csproj" />
   </ItemGroup>
 
 </Project>

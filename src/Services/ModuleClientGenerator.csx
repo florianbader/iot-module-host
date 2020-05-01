@@ -1,6 +1,10 @@
 #! "netcoreapp3.1"
 #r "nuget: Microsoft.Azure.Devices.Client,1.*"
 
+using System;
+using System.Linq;
+using System.Text;
+using System.IO;
 using System.Reflection;
 using Microsoft.Azure.Devices.Client;
 
@@ -54,8 +58,10 @@ string Generate(bool isInterface = false)
 // Class
 File.WriteAllText("ModuleClient.cs", $@"// THIS DOCUMENT IS GENERATED, ALL CHANGES WILL GET OVERWRITTEN!
 #nullable disable
-namespace AIT.Devices
+
+namespace Bader.Edge.ModuleHost
 {{
+    [System.CodeDom.Compiler.GeneratedCode(""ModuleClientGenerator.csx"", ""1.0"")]
     public class ModuleClient : IModuleClient
     {{
         private Microsoft.Azure.Devices.Client.ModuleClient _moduleClient;
@@ -71,7 +77,7 @@ namespace AIT.Devices
 
 // Interface
 File.WriteAllText("IModuleClient.cs", $@"// THIS DOCUMENT IS GENERATED, ALL CHANGES WILL GET OVERWRITTEN!
-namespace AIT.Devices
+namespace Bader.Edge.ModuleHost
 {{
     public interface IModuleClient
     {{

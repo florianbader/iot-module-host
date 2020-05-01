@@ -7,7 +7,7 @@ using Microsoft.Azure.Devices.Shared;
 using Microsoft.Extensions.DependencyInjection;
 using Serilog;
 
-namespace starter
+namespace Starter
 {
     // The methods of the Startup class are called by convention and are specified in the IStartup interface.
     // If a method was not found the method is not called.

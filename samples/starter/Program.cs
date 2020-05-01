@@ -7,7 +7,7 @@ using Microsoft.Extensions.Hosting;
 using Serilog;
 using Serilog.Exceptions;
 
-namespace starter
+namespace Starter
 {
     public class Program
     {

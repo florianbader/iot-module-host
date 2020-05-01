@@ -5,7 +5,7 @@ using AIT.Devices;
 using Microsoft.Azure.Devices.Client;
 using Serilog;
 
-namespace starter.MessageHandlers
+namespace Starter.MessageHandlers
 {
     // This is not needed for default method handlers but can still be specified to explicitly mark the default method handler
     [MethodHandler(isDefault: true)]
@@ -13,10 +13,7 @@ namespace starter.MessageHandlers
     {
         private readonly IModuleClient _moduleClient;
 
-        public DefaultMethodHandler(IModuleClient moduleClient)
-        {
-            _moduleClient = moduleClient;
-        }
+        public DefaultMethodHandler(IModuleClient moduleClient) => _moduleClient = moduleClient;
 
         public Task<MethodResponse> HandleMethodAsync(MethodRequest methodRequest)
         {
@@ -24,7 +21,7 @@ namespace starter.MessageHandlers
             Log.Information("Received method call '{MethodName}' with payload: {Payload}",
                 methodRequest.Name, json.RootElement.ToString());
 
-            return Task.FromResult(new MethodResponse((int) HttpStatusCode.OK));
+            return Task.FromResult(new MethodResponse((int)HttpStatusCode.OK));
         }
     }
 }
