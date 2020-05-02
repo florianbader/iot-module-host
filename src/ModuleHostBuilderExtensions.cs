@@ -1,9 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
+using System;
 using System.Linq;
 using Bader.Edge.ModuleHost;
 using Microsoft.Azure.Devices.Client.Transport.Mqtt;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using AzureDeviceClient = Microsoft.Azure.Devices.Client;

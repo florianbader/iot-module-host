@@ -21,7 +21,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Bader.Edge.ModuleHost.Tests
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "samples", "samples", "{98F8F545-80A4-4D56-8894-9F07CF79DB52}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "starter", "..\samples\starter\starter.csproj", "{615A6DCA-9698-4C09-94DA-FB8AF43673F2}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Starter", "..\samples\starter\Starter.csproj", "{615A6DCA-9698-4C09-94DA-FB8AF43673F2}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

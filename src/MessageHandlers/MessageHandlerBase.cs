@@ -1,10 +1,9 @@
 using System;
 using System.Threading.Tasks;
-using Bader.Edge.ModuleHost;
 using Microsoft.Azure.Devices.Client;
 using Microsoft.Extensions.Logging;
 
-namespace AIT.Devices.MessageHandlers
+namespace Bader.Edge.ModuleHost
 {
     /// <summary>
     /// This defines a message handler class which catches exceptions and logs them.
@@ -13,6 +12,9 @@ namespace AIT.Devices.MessageHandlers
     {
         private readonly string _name;
 
+        /// <summary>
+        /// Gets the logger.
+        /// </summary>
         protected ILogger Logger { get; }
 
         /// <summary>

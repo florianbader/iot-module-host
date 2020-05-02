@@ -4,8 +4,6 @@ using Microsoft.Azure.Devices.Client;
 using Microsoft.Azure.Devices.Shared;
 using Microsoft.Extensions.DependencyInjection;
 
-[assembly: System.Runtime.CompilerServices.InternalsVisibleTo("Bader.Edge.ModuleHost.Tests")]
-
 namespace Bader.Edge.ModuleHost
 {
     /// <summary>

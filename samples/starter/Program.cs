@@ -9,8 +9,17 @@ using Serilog.Exceptions;
 
 namespace Starter
 {
-    public class Program
+    public static class Program
     {
+        public static IHostBuilder CreateHostBuilder(string[] args) =>
+            // To initialize the module host use the ModuleHostBuilder class.
+            // Because this class implements the IHostBuilder interface you can also use other extensions.
+            new ModuleHostBuilder(args)
+                // The only option you need to set is the Startup class which should be used.
+                // You don't need to specify method handlers or message handlers they are found through their interface.
+                .UseStartup<Startup>()
+                .UseSerilog();
+
         public static async Task Main(string[] args)
         {
             var configuration = new ConfigurationBuilder()
@@ -38,14 +47,5 @@ namespace Starter
                 Log.CloseAndFlush();
             }
         }
-
-        public static IHostBuilder CreateHostBuilder(string[] args) =>
-            // To initialize the module host use the ModuleHostBuilder class.
-            // Because this class implements the IHostBuilder interface you can also use other extensions.
-            new ModuleHostBuilder(args)
-                // The only option you need to set is the Startup class which should be used.
-                // You don't need to specify method handlers or message handlers they are found through their interface.
-                .UseStartup<Startup>()
-                .UseSerilog();
     }
 }
