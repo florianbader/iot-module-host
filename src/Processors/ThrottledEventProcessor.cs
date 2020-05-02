@@ -21,20 +21,36 @@ namespace Bader.Edge.ModuleHost
         private readonly BlockingCollection<Message> _queue;
         private readonly CancellationToken _shutdownToken;
         private readonly ISystemTime _systemTime;
-        private readonly TimeSpan _timeout;
         private int _enqueueCount;
         private int _enqueueFailCount;
         private bool _isDisposing;
+        private int _processedCount;
+        private int _sendCount;
+
+        public int EnqueueCount => _enqueueCount;
+
+        public int EnqueueFailCount => _enqueueFailCount;
 
         public int MaxMessageSize { get; }
+
+        public int ProcessedCount => _processedCount;
+
+        public int SendCount => _sendCount;
+
+        public TimeSpan Timeout { get; }
 
         internal int MessageHeaderSize { get; }
 
         public ThrottledEventProcessor(IModuleClient moduleClient, int capacity, TimeSpan timeout, ISystemTime systemTime, ILogger<ThrottledEventProcessor> logger, CancellationToken shutdownToken)
+            : this(moduleClient, capacity, 1024 * 4, timeout, systemTime, logger, shutdownToken)
+        {
+        }
+
+        public ThrottledEventProcessor(IModuleClient moduleClient, int capacity, int maxMessageSize, TimeSpan timeout, ISystemTime systemTime, ILogger<ThrottledEventProcessor> logger, CancellationToken shutdownToken)
         {
             _queue = new BlockingCollection<Message>(capacity);
             _moduleClient = moduleClient;
-            _timeout = timeout;
+            Timeout = timeout;
             _systemTime = systemTime;
             _logger = logger;
             _shutdownToken = shutdownToken;
@@ -42,8 +58,7 @@ namespace Bader.Edge.ModuleHost
             // System properties size: MessageId (max 128 bytes) + sequence number (ulong) + expiry date (DateTime)
             MessageHeaderSize = 128 + sizeof(ulong) + _systemTime.UtcNow.ToString(CultureInfo.InvariantCulture).Length;
 
-            // TODO: Make this a constructor parameter.
-            MaxMessageSize = 1024 * 4;
+            MaxMessageSize = maxMessageSize;
         }
 
         /// <inheritdoc/>
@@ -69,7 +84,7 @@ namespace Bader.Edge.ModuleHost
 
         public async Task StartAsync()
         {
-            var nextSendTime = _systemTime.UtcNow + _timeout;
+            var nextSendTime = _systemTime.UtcNow + Timeout;
 
             var memoryStream = new MemoryStream();
             memoryStream.Write(SquareBracketOpen, 0, 1);
@@ -112,6 +127,7 @@ namespace Bader.Edge.ModuleHost
                         try
                         {
                             await _moduleClient.SendEventAsync(hubMessage, _shutdownToken).ConfigureAwait(false);
+                            Interlocked.Increment(ref _sendCount);
                         }
                         finally
                         {
@@ -125,7 +141,7 @@ namespace Bader.Edge.ModuleHost
                             memoryStream.SetLength(0);
                             memoryStream.Write(SquareBracketOpen, 0, 1);
 
-                            nextSendTime = _systemTime.UtcNow + _timeout;
+                            nextSendTime = _systemTime.UtcNow + Timeout;
                         }
                     }
 
@@ -148,8 +164,10 @@ namespace Bader.Edge.ModuleHost
 
                     // if we received an array we assume it is already batched and we just merge the content
                     var offset = messageBytes[0] == SquareBracketOpen[0] ? 1 : 0;
-                    var length = messageBytes[0] == SquareBracketOpen[0] ? messageBytes.Length - 1 : messageBytes.Length;
+                    var length = messageBytes[0] == SquareBracketOpen[0] ? messageBytes.Length - 2 : messageBytes.Length;
                     memoryStream.Write(messageBytes, offset, length);
+
+                    Interlocked.Increment(ref _processedCount);
                 }
                 catch (Exception ex)
                 {
