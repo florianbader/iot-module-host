@@ -6,41 +6,44 @@ using System.IO;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using Bader.Edge.ModuleHost;
 using Microsoft.Azure.Devices.Client;
 using Microsoft.Extensions.Logging;
 
-namespace AIT.Devices.Processors
+namespace Bader.Edge.ModuleHost
 {
     public class ThrottledEventProcessor : IDisposable
     {
-        private readonly byte[] _comma = Encoding.UTF8.GetBytes(new[] { ',' });
+        private static readonly byte[] Comma = Encoding.UTF8.GetBytes(new[] { ',' });
+        private static readonly byte[] SquareBracketClose = Encoding.UTF8.GetBytes(new[] { ']' });
+        private static readonly byte[] SquareBracketOpen = Encoding.UTF8.GetBytes(new[] { '[' });
         private readonly ILogger<ThrottledEventProcessor> _logger;
-        private readonly int _maxMessageSize;
-        private readonly int _messageHeaderSize;
         private readonly IModuleClient _moduleClient;
         private readonly BlockingCollection<Message> _queue;
         private readonly CancellationToken _shutdownToken;
-        private readonly byte[] _squareBracketClose = Encoding.UTF8.GetBytes(new[] { ']' });
-        private readonly byte[] _squareBracketOpen = Encoding.UTF8.GetBytes(new[] { '[' });
+        private readonly ISystemTime _systemTime;
         private readonly TimeSpan _timeout;
         private int _enqueueCount;
         private int _enqueueFailCount;
         private bool _isDisposing;
 
-        public ThrottledEventProcessor(IModuleClient moduleClient, int capacity, TimeSpan timeout, ILogger<ThrottledEventProcessor> logger, CancellationToken shutdownToken)
+        public int MaxMessageSize { get; }
+
+        internal int MessageHeaderSize { get; }
+
+        public ThrottledEventProcessor(IModuleClient moduleClient, int capacity, TimeSpan timeout, ISystemTime systemTime, ILogger<ThrottledEventProcessor> logger, CancellationToken shutdownToken)
         {
             _queue = new BlockingCollection<Message>(capacity);
             _moduleClient = moduleClient;
             _timeout = timeout;
+            _systemTime = systemTime;
             _logger = logger;
             _shutdownToken = shutdownToken;
 
             // System properties size: MessageId (max 128 bytes) + sequence number (ulong) + expiry date (DateTime)
-            _messageHeaderSize = 128 + sizeof(ulong) + DateTime.UtcNow.ToString(CultureInfo.InvariantCulture).Length;
+            MessageHeaderSize = 128 + sizeof(ulong) + _systemTime.UtcNow.ToString(CultureInfo.InvariantCulture).Length;
 
             // TODO: Make this a constructor parameter.
-            _maxMessageSize = 1024 * 4;
+            MaxMessageSize = 1024 * 4;
         }
 
         /// <inheritdoc/>
@@ -66,10 +69,10 @@ namespace AIT.Devices.Processors
 
         public async Task StartAsync()
         {
-            var nextSendTime = DateTime.UtcNow + _timeout;
+            var nextSendTime = _systemTime.UtcNow + _timeout;
 
             var memoryStream = new MemoryStream();
-            memoryStream.Write(_squareBracketOpen, 0, 1);
+            memoryStream.Write(SquareBracketOpen, 0, 1);
 
             var properties = new Dictionary<string, string>();
             var applicationPropertySize = 0;
@@ -79,7 +82,7 @@ namespace AIT.Devices.Processors
             {
                 try
                 {
-                    var millisecondsTimeout = (int)nextSendTime.Subtract(DateTime.UtcNow).TotalMilliseconds;
+                    var millisecondsTimeout = (int)nextSendTime.Subtract(_systemTime.UtcNow).TotalMilliseconds;
                     var hasMessage = _queue.TryTake(out message, millisecondsTimeout, _shutdownToken);
 
                     if (!hasMessage)
@@ -90,61 +93,63 @@ namespace AIT.Devices.Processors
                     var messageBytes = (message.BodyStream as MemoryStream)?.ToArray() ?? throw new InvalidOperationException("Invalid body stream in message");
                     var messagePropertiesSize = GetApplicationPropertiesLength(properties, message);
 
-                    var aggregatedMessageSize = _messageHeaderSize + applicationPropertySize + messagePropertiesSize + messageBytes.Length + memoryStream.Length;
+                    var aggregatedMessageSize = MessageHeaderSize + applicationPropertySize + messagePropertiesSize + messageBytes.Length + memoryStream.Length;
 
                     // check if we would either exceed max message size or the next send time
-                    var shouldSendMessage = aggregatedMessageSize > _maxMessageSize || DateTime.UtcNow <= nextSendTime;
-                    if (!shouldSendMessage)
+                    var shouldSendMessage = aggregatedMessageSize > MaxMessageSize || _systemTime.UtcNow >= nextSendTime;
+                    if (shouldSendMessage)
                     {
-                        // append all properties of the current message if they do not already exist
-                        // TODO: Make this behaviour public so the user can overwrite it.
-                        foreach (var property in message.Properties.Keys)
+                        memoryStream.Write(SquareBracketClose, 0, 1);
+
+                        // send message
+                        var hubMessage = new Message(memoryStream);
+
+                        foreach (var key in properties.Keys)
                         {
-                            if (!properties.ContainsKey(property) && message.Properties[property] != null)
-                            {
-                                properties.Add(property, message.Properties[property]);
-                            }
+                            hubMessage.Properties[key] = properties[key];
                         }
 
-                        applicationPropertySize += messagePropertiesSize;
+                        try
+                        {
+                            await _moduleClient.SendEventAsync(hubMessage, _shutdownToken).ConfigureAwait(false);
+                        }
+                        finally
+                        {
+                            // reset
+                            hubMessage?.Dispose();
 
-                        // if we received an array we assume it is already batched and we just merge the content
-                        var offset = messageBytes[0] == _squareBracketOpen[0] ? 1 : 0;
-                        var length = messageBytes[0] == _squareBracketOpen[0] ? messageBytes.Length - 1 : messageBytes.Length;
-                        memoryStream.Write(messageBytes, offset, length);
-                        memoryStream.Write(_comma, 0, 1);
+                            properties.Clear();
+                            applicationPropertySize = 0;
 
-                        continue;
+                            memoryStream.Position = 0;
+                            memoryStream.SetLength(0);
+                            memoryStream.Write(SquareBracketOpen, 0, 1);
+
+                            nextSendTime = _systemTime.UtcNow + _timeout;
+                        }
                     }
 
-                    memoryStream.Write(_squareBracketClose, 0, 1);
-
-                    // send message
-                    var hubMessage = new Message(memoryStream);
-
-                    foreach (var key in properties.Keys)
+                    if (memoryStream.Length > 1)
                     {
-                        hubMessage.Properties[key] = properties[key];
+                        memoryStream.Write(Comma, 0, 1);
                     }
 
-                    try
+                    // append all properties of the current message if they do not already exist
+                    // TODO: Make this behaviour public so the user can overwrite it.
+                    foreach (var property in message.Properties.Keys)
                     {
-                        await _moduleClient.SendEventAsync(hubMessage, _shutdownToken).ConfigureAwait(false);
+                        if (!properties.ContainsKey(property) && message.Properties[property] != null)
+                        {
+                            properties.Add(property, message.Properties[property]);
+                        }
                     }
-                    finally
-                    {
-                        // reset
-                        hubMessage?.Dispose();
 
-                        properties.Clear();
-                        applicationPropertySize = 0;
+                    applicationPropertySize += messagePropertiesSize;
 
-                        memoryStream.Position = 0;
-                        memoryStream.SetLength(0);
-                        memoryStream.Write(_squareBracketOpen, 0, 1);
-
-                        nextSendTime = DateTime.UtcNow + _timeout;
-                    }
+                    // if we received an array we assume it is already batched and we just merge the content
+                    var offset = messageBytes[0] == SquareBracketOpen[0] ? 1 : 0;
+                    var length = messageBytes[0] == SquareBracketOpen[0] ? messageBytes.Length - 1 : messageBytes.Length;
+                    memoryStream.Write(messageBytes, offset, length);
                 }
                 catch (Exception ex)
                 {

@@ -8,6 +8,8 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
+[assembly: System.Runtime.CompilerServices.InternalsVisibleTo("Bader.Edge.ModuleHost.Tests")]
+
 namespace Bader.Edge.ModuleHost
 {
     /// <summary>

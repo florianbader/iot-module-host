@@ -77,7 +77,7 @@ namespace Bader.Edge.ModuleHost
 
 // Interface
 File.WriteAllText("IModuleClient.cs", $@"// THIS DOCUMENT IS GENERATED, ALL CHANGES WILL GET OVERWRITTEN!
-namespace Bader.Edge.ModuleHost
+namespace
 {{
     public interface IModuleClient
     {{

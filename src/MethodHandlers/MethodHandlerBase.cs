@@ -2,11 +2,10 @@ using System;
 using System.Net;
 using System.Text;
 using System.Threading.Tasks;
-using Bader.Edge.ModuleHost;
 using Microsoft.Azure.Devices.Client;
 using Microsoft.Extensions.Logging;
 
-namespace AIT.Devices.MethodHandlers
+namespace Bader.Edge.ModuleHost
 {
     /// <summary>
     /// This defines a method handler class which catches exceptions and logs them.

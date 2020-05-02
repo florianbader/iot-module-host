@@ -1,0 +1,315 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>Bader.Edge.ModuleHost</name>
+    </assembly>
+    <members>
+        <member name="T:Bader.Edge.ModuleHost.IMessageHandler">
+            <summary>
+            This defines a message handler class.
+            </summary>
+        </member>
+        <member name="M:Bader.Edge.ModuleHost.IMessageHandler.HandleMessageAsync(Microsoft.Azure.Devices.Client.Message)">
+            <summary>
+            Handles a message from the cloud or another module.
+            </summary>
+            <param name="message">The message.</param>
+            <returns>The message response.</returns>
+        </member>
+        <member name="T:Bader.Edge.ModuleHost.MessageHandlerAttribute">
+            <summary>
+            Defines a message handler and declares optionally if it's a default message handler or for a specific input.
+            </summary>
+        </member>
+        <member name="P:Bader.Edge.ModuleHost.MessageHandlerAttribute.InputName">
+            <summary>
+            Gets the input name of the handled message.
+            </summary>
+        </member>
+        <member name="P:Bader.Edge.ModuleHost.MessageHandlerAttribute.IsDefault">
+            <summary>
+            Gets a value indicating whether this handler handles all messages which are not otherwise handled.
+            </summary>
+        </member>
+        <member name="M:Bader.Edge.ModuleHost.MessageHandlerAttribute.#ctor">
+            <summary>
+            Initializes a new instance of the <see cref="T:Bader.Edge.ModuleHost.MessageHandlerAttribute"/> class.
+            </summary>
+        </member>
+        <member name="M:Bader.Edge.ModuleHost.MessageHandlerAttribute.#ctor(System.Boolean)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Bader.Edge.ModuleHost.MessageHandlerAttribute"/> class specifying if it's the default handler.
+            </summary>
+            <param name="isDefault">Whether this handler handles all messages which are not otherwise handled.</param>
+        </member>
+        <member name="M:Bader.Edge.ModuleHost.MessageHandlerAttribute.#ctor(System.String)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Bader.Edge.ModuleHost.MessageHandlerAttribute"/> class specifying if the name of the message input in the route.
+            </summary>
+            <param name="inputName">The input name of the handled method.</param>
+        </member>
+        <member name="T:Bader.Edge.ModuleHost.MessageHandlerBase">
+            <summary>
+            This defines a message handler class which catches exceptions and logs them.
+            </summary>
+        </member>
+        <member name="P:Bader.Edge.ModuleHost.MessageHandlerBase.Logger">
+            <summary>
+            Gets the logger.
+            </summary>
+        </member>
+        <member name="M:Bader.Edge.ModuleHost.MessageHandlerBase.#ctor(Microsoft.Extensions.Logging.ILogger)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Bader.Edge.ModuleHost.MessageHandlerBase"/> class.
+            </summary>
+            <param name="logger">The logger.</param>
+        </member>
+        <member name="M:Bader.Edge.ModuleHost.MessageHandlerBase.Bader#Edge#ModuleHost#IMessageHandler#HandleMessageAsync(Microsoft.Azure.Devices.Client.Message)">
+            <inheritdoc />
+        </member>
+        <member name="M:Bader.Edge.ModuleHost.MessageHandlerBase.Error">
+            <summary>
+            Returns a message response abandoned.
+            </summary>
+        </member>
+        <member name="M:Bader.Edge.ModuleHost.MessageHandlerBase.HandleMessageAsync(Microsoft.Azure.Devices.Client.Message)">
+            <summary>
+            Handles a message from the cloud or another module. Exceptions get caught and automatically logged.
+            </summary>
+            <param name="message">The message.</param>
+            <returns>The message response.</returns>
+        </member>
+        <member name="M:Bader.Edge.ModuleHost.MessageHandlerBase.Ok">
+            <summary>
+            Returns a message response completed.
+            </summary>
+        </member>
+        <member name="T:Bader.Edge.ModuleHost.IMethodHandler">
+            <summary>
+            This defines a method handler class.
+            </summary>
+        </member>
+        <member name="M:Bader.Edge.ModuleHost.IMethodHandler.HandleMethodAsync(Microsoft.Azure.Devices.Client.MethodRequest)">
+            <summary>
+            Handles a method from the cloud or another module.
+            </summary>
+            <param name="methodRequest">The method request.</param>
+            <returns>The method response.</returns>
+        </member>
+        <member name="T:Bader.Edge.ModuleHost.MethodHandlerAttribute">
+            <summary>
+            Defines a method handler and declares optionally if it's a default method handler.
+            </summary>
+        </member>
+        <member name="P:Bader.Edge.ModuleHost.MethodHandlerAttribute.IsDefault">
+            <summary>
+            Gets a value indicating whether this handler handles all methods which are not otherwise handled.
+            </summary>
+        </member>
+        <member name="P:Bader.Edge.ModuleHost.MethodHandlerAttribute.MethodName">
+            <summary>
+            Gets the method name of the handled method.
+            </summary>
+        </member>
+        <member name="M:Bader.Edge.ModuleHost.MethodHandlerAttribute.#ctor">
+            <summary>
+            Initializes a new instance of the <see cref="T:Bader.Edge.ModuleHost.MethodHandlerAttribute"/> class.
+            </summary>
+        </member>
+        <member name="M:Bader.Edge.ModuleHost.MethodHandlerAttribute.#ctor(System.Boolean)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Bader.Edge.ModuleHost.MethodHandlerAttribute"/> class specifying if it's the default handler.
+            </summary>
+            <param name="isDefault">Whether this handler handles all methods which are not otherwise handled.</param>
+        </member>
+        <member name="M:Bader.Edge.ModuleHost.MethodHandlerAttribute.#ctor(System.String)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Bader.Edge.ModuleHost.MethodHandlerAttribute"/> class.
+            </summary>
+            <param name="methodName">THe name of the method which should be handled.</param>
+        </member>
+        <member name="T:Bader.Edge.ModuleHost.MethodHandlerBase">
+            <summary>
+            This defines a method handler class which catches exceptions and logs them.
+            </summary>
+        </member>
+        <member name="P:Bader.Edge.ModuleHost.MethodHandlerBase.Logger">
+            <summary>
+            Gets the logger.
+            </summary>
+        </member>
+        <member name="M:Bader.Edge.ModuleHost.MethodHandlerBase.#ctor(Microsoft.Extensions.Logging.ILogger)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Bader.Edge.ModuleHost.MethodHandlerBase"/> class.
+            </summary>
+            <param name="logger">The logger.</param>
+        </member>
+        <member name="M:Bader.Edge.ModuleHost.MethodHandlerBase.Bader#Edge#ModuleHost#IMethodHandler#HandleMethodAsync(Microsoft.Azure.Devices.Client.MethodRequest)">
+            <inheritdoc />
+        </member>
+        <member name="M:Bader.Edge.ModuleHost.MethodHandlerBase.BadRequest(System.String)">
+            <summary>
+            Returns a method response for a bad request.
+            </summary>
+            <param name="errorMessage">The error message.</param>
+        </member>
+        <member name="M:Bader.Edge.ModuleHost.MethodHandlerBase.Error(System.String)">
+            <summary>
+            Returns a method response for an error.
+            </summary>
+            <param name="errorMessage">The error message.</param>
+        </member>
+        <member name="M:Bader.Edge.ModuleHost.MethodHandlerBase.HandleMethodAsync(Microsoft.Azure.Devices.Client.MethodRequest)">
+            <summary>
+            Handles a method from the cloud or another module.
+            </summary>
+            <param name="methodRequest">The method request.</param>
+            <returns>The method response.</returns>
+        </member>
+        <member name="M:Bader.Edge.ModuleHost.MethodHandlerBase.Ok">
+            <summary>
+            Returns a method response for a success.
+            </summary>
+        </member>
+        <member name="T:Bader.Edge.ModuleHost.ModuleClientHostedService">
+            <summary>
+            The module client hosted service which starts the edge module.
+            </summary>
+        </member>
+        <member name="M:Bader.Edge.ModuleHost.ModuleClientHostedService.#ctor(System.IServiceProvider,Microsoft.Extensions.Logging.ILogger{Bader.Edge.ModuleHost.ModuleClientHostedService})">
+            <summary>
+            Initializes a new instance of the <see cref="T:Bader.Edge.ModuleHost.ModuleClientHostedService"/> class.
+            </summary>
+            <param name="serviceProvider">The service provider.</param>
+            <param name="logger">The logger.</param>
+        </member>
+        <member name="M:Bader.Edge.ModuleHost.ModuleClientHostedService.StartAsync(System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:Bader.Edge.ModuleHost.ModuleClientHostedService.StopAsync(System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:Bader.Edge.ModuleHost.ThrottledEventProcessor.Dispose">
+            <inheritdoc/>
+        </member>
+        <member name="T:Bader.Edge.ModuleHost.ConventionalStartup">
+            <summary>
+            The conventional startup which is used if the user did not provide a class which implements the IStartup interface.
+            </summary>
+        </member>
+        <member name="M:Bader.Edge.ModuleHost.ConventionalStartup.#ctor(System.Type)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Bader.Edge.ModuleHost.ConventionalStartup"/> class.
+            </summary>
+            <param name="type">The type of the user startup class.</param>
+        </member>
+        <member name="M:Bader.Edge.ModuleHost.ConventionalStartup.#ctor(System.Type,System.Object)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Bader.Edge.ModuleHost.ConventionalStartup"/> class.
+            </summary>
+            <param name="type">The type of the user startup class.</param>
+            <param name="instance">The instance of the user startup class.</param>
+        </member>
+        <member name="M:Bader.Edge.ModuleHost.ConventionalStartup.ConfigureAsync(Bader.Edge.ModuleHost.IModuleClient)">
+            <inheritdoc />
+        </member>
+        <member name="M:Bader.Edge.ModuleHost.ConventionalStartup.ConfigureServices(Microsoft.Extensions.DependencyInjection.IServiceCollection)">
+            <inheritdoc />
+        </member>
+        <member name="M:Bader.Edge.ModuleHost.ConventionalStartup.ConnectionStatusChangesAsync(Microsoft.Azure.Devices.Client.ConnectionStatus,Microsoft.Azure.Devices.Client.ConnectionStatusChangeReason)">
+            <inheritdoc />
+        </member>
+        <member name="M:Bader.Edge.ModuleHost.ConventionalStartup.DesiredPropertyUpdateAsync(Microsoft.Azure.Devices.Shared.TwinCollection)">
+            <inheritdoc />
+        </member>
+        <member name="T:Bader.Edge.ModuleHost.IStartup">
+            <summary>
+            Defines the start up of an edge module.
+            </summary>
+        </member>
+        <member name="M:Bader.Edge.ModuleHost.IStartup.ConfigureAsync(Bader.Edge.ModuleHost.IModuleClient)">
+            <summary>
+            Configures the module asynchronously. All services are already configured and the module client is connected at this point.
+            </summary>
+            <param name="moduleClient">The module client.</param>
+            <returns>A <see cref="T:System.Threading.Tasks.Task"/> representing the asynchronous operation.</returns>
+        </member>
+        <member name="M:Bader.Edge.ModuleHost.IStartup.ConfigureServices(Microsoft.Extensions.DependencyInjection.IServiceCollection)">
+            <summary>
+            Configures the services in the provided service collection.
+            </summary>
+            <param name="services">The service collection.</param>
+        </member>
+        <member name="M:Bader.Edge.ModuleHost.IStartup.ConnectionStatusChangesAsync(Microsoft.Azure.Devices.Client.ConnectionStatus,Microsoft.Azure.Devices.Client.ConnectionStatusChangeReason)">
+            <summary>
+            Gets called when the connection status changes.
+            </summary>
+            <param name="status">The new connection status.</param>
+            <param name="reason">The reason for a connection status change.</param>
+            <returns>A <see cref="T:System.Threading.Tasks.Task"/> representing the asynchronous operation.</returns>
+        </member>
+        <member name="M:Bader.Edge.ModuleHost.IStartup.DesiredPropertyUpdateAsync(Microsoft.Azure.Devices.Shared.TwinCollection)">
+            <summary>
+            Gets called when a desired property in the module twin updates.
+            </summary>
+            <param name="desiredProperties">The desired properties of the module twin.</param>
+            <returns>A <see cref="T:System.Threading.Tasks.Task"/> representing the asynchronous operation.</returns>
+        </member>
+        <member name="T:Microsoft.Extensions.Hosting.ModuleHostBuilder">
+            <summary>
+            The module host builder.
+            </summary>
+        </member>
+        <member name="P:Microsoft.Extensions.Hosting.ModuleHostBuilder.Properties">
+            <inheritdoc />
+        </member>
+        <member name="M:Microsoft.Extensions.Hosting.ModuleHostBuilder.#ctor">
+            <summary>
+            Initializes a new instance of the <see cref="T:Microsoft.Extensions.Hosting.ModuleHostBuilder"/> class.
+            </summary>
+        </member>
+        <member name="M:Microsoft.Extensions.Hosting.ModuleHostBuilder.#ctor(System.String[])">
+            <summary>
+            Initializes a new instance of the <see cref="T:Microsoft.Extensions.Hosting.ModuleHostBuilder"/> class.
+            </summary>
+            <param name="args">The arguments for the default builder.</param>
+        </member>
+        <member name="M:Microsoft.Extensions.Hosting.ModuleHostBuilder.Build">
+            <inheritdoc />
+        </member>
+        <member name="M:Microsoft.Extensions.Hosting.ModuleHostBuilder.ConfigureAppConfiguration(System.Action{Microsoft.Extensions.Hosting.HostBuilderContext,Microsoft.Extensions.Configuration.IConfigurationBuilder})">
+            <inheritdoc />
+        </member>
+        <member name="M:Microsoft.Extensions.Hosting.ModuleHostBuilder.ConfigureContainer``1(System.Action{Microsoft.Extensions.Hosting.HostBuilderContext,``0})">
+            <inheritdoc />
+        </member>
+        <member name="M:Microsoft.Extensions.Hosting.ModuleHostBuilder.ConfigureHostConfiguration(System.Action{Microsoft.Extensions.Configuration.IConfigurationBuilder})">
+            <inheritdoc />
+        </member>
+        <member name="M:Microsoft.Extensions.Hosting.ModuleHostBuilder.ConfigureServices(System.Action{Microsoft.Extensions.Hosting.HostBuilderContext,Microsoft.Extensions.DependencyInjection.IServiceCollection})">
+            <inheritdoc />
+        </member>
+        <member name="M:Microsoft.Extensions.Hosting.ModuleHostBuilder.UseServiceProviderFactory``1(Microsoft.Extensions.DependencyInjection.IServiceProviderFactory{``0})">
+            <inheritdoc />
+        </member>
+        <member name="M:Microsoft.Extensions.Hosting.ModuleHostBuilder.UseServiceProviderFactory``1(System.Func{Microsoft.Extensions.Hosting.HostBuilderContext,Microsoft.Extensions.DependencyInjection.IServiceProviderFactory{``0}})">
+            <inheritdoc />
+        </member>
+        <member name="M:Microsoft.Extensions.Hosting.ModuleHostBuilderExtensions.UseStartup``1(Microsoft.Extensions.Hosting.IHostBuilder)">
+            <summary>
+            Uses the given type as the start up class for the edge module.
+            </summary>
+            <typeparam name="TStartup">The type of the start up class.</typeparam>
+            <param name="hostBuilder">The host builder.</param>
+            <returns>The host builder.</returns>
+        </member>
+        <member name="M:Microsoft.Extensions.Hosting.ModuleHostBuilderExtensions.UseStartup(Microsoft.Extensions.Hosting.IHostBuilder,Bader.Edge.ModuleHost.IStartup)">
+            <summary>
+            Uses the given instance as the start up class for the edge module.
+            </summary>
+            <param name="hostBuilder">The host builder.</param>
+            <param name="startup">The instance of the start up class.</param>
+            <returns>The host builder.</returns>
+        </member>
+    </members>
+</doc>
