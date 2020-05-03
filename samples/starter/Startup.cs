@@ -1,5 +1,5 @@
 using System.Threading.Tasks;
-using AIT.Devices;
+using Bader.Edge.ModuleHost;
 using Microsoft.Azure.Devices.Client;
 using Microsoft.Azure.Devices.Shared;
 using Microsoft.Extensions.DependencyInjection;

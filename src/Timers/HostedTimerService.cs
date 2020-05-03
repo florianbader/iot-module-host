@@ -9,6 +9,8 @@ namespace Bader.Edge.ModuleHost
     {
         private CancellationTokenSource _cancellationTokenSource;
 
+        protected CancellationToken CancellationToken => _cancellationTokenSource.Token;
+
         protected TimeSpan Interval { get; }
 
         protected bool ShouldCallInitially { get; }

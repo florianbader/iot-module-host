@@ -34,7 +34,13 @@ namespace Bader.Edge.ModuleHost
         {
             try
             {
-                return await HandleMethodAsync(methodRequest).ConfigureAwait(false);
+                Logger.LogTrace("Executing method handler {MethodHandlerName}", _name);
+
+                var response = await HandleMethodAsync(methodRequest).ConfigureAwait(false);
+
+                Logger.LogTrace("Successfully handled method {MethodHandlerName}", _name);
+
+                return response;
             }
             catch (Exception ex)
             {

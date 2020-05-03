@@ -2,10 +2,10 @@ using System;
 
 namespace Bader.Edge.ModuleHost
 {
-    public interface ISystemTime
+    internal interface ISystemTime
     {
-        DateTime Now => DateTime.Now;
+        DateTime Now { get; }
 
-        DateTime UtcNow => DateTime.UtcNow;
+        DateTime UtcNow { get; }
     }
 }

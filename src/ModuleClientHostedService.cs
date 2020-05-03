@@ -9,6 +9,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
 [assembly: System.Runtime.CompilerServices.InternalsVisibleTo("Bader.Edge.ModuleHost.Tests")]
+[assembly: System.Runtime.CompilerServices.InternalsVisibleTo("DynamicProxyGenAssembly2")]
 
 namespace Bader.Edge.ModuleHost
 {
@@ -17,7 +18,7 @@ namespace Bader.Edge.ModuleHost
     /// </summary>
     internal class ModuleClientHostedService : IHostedService
     {
-        private readonly ILogger<ModuleClientHostedService>? _logger;
+        private readonly ILogger<ModuleClientHostedService> _logger;
         private readonly IServiceProvider _serviceProvider;
         private IModuleClient _moduleClient;
 
@@ -39,14 +40,14 @@ namespace Bader.Edge.ModuleHost
             try
             {
                 _moduleClient = _serviceProvider.GetService<IModuleClient>();
-                if (_moduleClient == null)
+                if (_moduleClient is null)
                 {
                     throw new InvalidOperationException("IModuleClient not found.");
                 }
 
                 await _moduleClient.OpenAsync().ConfigureAwait(false);
 
-                _logger?.LogInformation("IoT Hub module client initialized.");
+                _logger.LogInformation("IoT Hub module client initialized.");
 
                 await ConfigureStartupAsync().ConfigureAwait(false);
 
@@ -56,7 +57,7 @@ namespace Bader.Edge.ModuleHost
             }
             catch (Exception ex)
             {
-                _logger?.LogError(ex, "Error occurred on startup");
+                _logger.LogError(ex, "Error occurred on startup");
                 throw;
             }
         }
@@ -79,22 +80,21 @@ namespace Bader.Edge.ModuleHost
             {
                 var messageHandlerAttribute = GetCustomAttribute<MessageHandlerAttribute>(messageHandlerType);
 
-                // TODO: Use service provider to inject constructor parameters
                 var messageHandlerInstance = CreateInstance<IMessageHandler>(messageHandlerType);
                 if (messageHandlerInstance == null)
                 {
-                    _logger?.LogWarning($"Message handler for type {messageHandlerType.FullName} could not be created.");
+                    _logger.LogWarning($"Message handler for type {messageHandlerType.FullName} could not be created.");
                     continue;
                 }
 
                 if (messageHandlerAttribute.IsDefault)
                 {
-                    _logger?.LogTrace($"Registering message handler {messageHandlerType.FullName} as default...");
+                    _logger.LogTrace($"Registering message handler {messageHandlerType.FullName} as default...");
                     await _moduleClient.SetMessageHandlerAsync((message, _) => messageHandlerInstance.HandleMessageAsync(message), null!).ConfigureAwait(false);
                 }
                 else
                 {
-                    _logger?.LogTrace($"Registering message handler {messageHandlerType.FullName} for input {messageHandlerAttribute.InputName}...");
+                    _logger.LogTrace($"Registering message handler {messageHandlerType.FullName} for input {messageHandlerAttribute.InputName}...");
                     await _moduleClient.SetInputMessageHandlerAsync(messageHandlerAttribute.InputName,
                         (message, _) => messageHandlerInstance.HandleMessageAsync(message), null!).ConfigureAwait(false);
                 }
@@ -109,22 +109,21 @@ namespace Bader.Edge.ModuleHost
             {
                 var methodHandlerAttribute = GetCustomAttribute<MethodHandlerAttribute>(methodHandlerType);
 
-                // TODO: Use service provider to inject constructor parameters
                 var methodHandlerInstance = CreateInstance<IMethodHandler>(methodHandlerType);
                 if (methodHandlerInstance == null)
                 {
-                    _logger?.LogWarning($"Method handler for type {methodHandlerType.FullName} could not be created.");
+                    _logger.LogWarning($"Method handler for type {methodHandlerType.FullName} could not be created.");
                     continue;
                 }
 
                 if (methodHandlerAttribute.IsDefault)
                 {
-                    _logger?.LogTrace($"Registering method handler {methodHandlerType.FullName} as default...");
+                    _logger.LogTrace($"Registering method handler {methodHandlerType.FullName} as default...");
                     await _moduleClient.SetMethodDefaultHandlerAsync((methodRequest, _) => methodHandlerInstance.HandleMethodAsync(methodRequest), null!).ConfigureAwait(false);
                 }
                 else
                 {
-                    _logger?.LogTrace($"Registering method handler {methodHandlerType.FullName} for method {methodHandlerAttribute.MethodName}...");
+                    _logger.LogTrace($"Registering method handler {methodHandlerType.FullName} for method {methodHandlerAttribute.MethodName}...");
                     await _moduleClient.SetMethodHandlerAsync(methodHandlerAttribute.MethodName,
                         (message, _) => methodHandlerInstance.HandleMethodAsync(message), null!).ConfigureAwait(false);
                 }
@@ -136,7 +135,7 @@ namespace Bader.Edge.ModuleHost
             var startup = _serviceProvider.GetService<IStartup>();
             if (startup == null)
             {
-                _logger?.LogWarning("No startup implementation found.");
+                _logger.LogWarning("No startup implementation found.");
                 return;
             }
 

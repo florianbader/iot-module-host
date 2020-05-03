@@ -32,7 +32,13 @@ namespace Bader.Edge.ModuleHost
         {
             try
             {
-                return await HandleMessageAsync(message).ConfigureAwait(false);
+                Logger.LogTrace("Executing message handler {MessageHandlerName}", _name);
+
+                var response = await HandleMessageAsync(message).ConfigureAwait(false);
+
+                Logger.LogTrace("Successfully handled message {MethodHandlerName}", _name);
+
+                return response;
             }
             catch (Exception ex)
             {

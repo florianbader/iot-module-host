@@ -34,7 +34,7 @@ namespace Bader.Edge.ModuleHost.Tests.Processors
 
             _cancellationTokenSource = new CancellationTokenSource();
 
-            _processor = new ThrottledEventProcessor(_moduleClientMock.Object, 100, TimeSpan.FromSeconds(60), _systemTimeMock.Object, Mock.Of<ILogger<ThrottledEventProcessor>>(), _cancellationTokenSource.Token);
+            _processor = new ThrottledEventProcessor(_moduleClientMock.Object, 100, 1024 * 4, TimeSpan.FromSeconds(60), _systemTimeMock.Object, Mock.Of<ILogger<ThrottledEventProcessor>>(), _cancellationTokenSource.Token);
 
             new Thread(() => _processor.StartAsync().Wait())
             {

@@ -22,7 +22,7 @@ namespace Microsoft.Extensions.Hosting
                 ? Activator.CreateInstance<TStartup>() as IStartup
                 : new ConventionalStartup(typeof(TStartup));
 
-            if (startup == null)
+            if (startup is null)
             {
                 throw new InvalidOperationException("Could not create startup implementation");
             }
@@ -38,24 +38,19 @@ namespace Microsoft.Extensions.Hosting
         /// <returns>The host builder.</returns>
         internal static IHostBuilder UseStartup(this IHostBuilder hostBuilder, IStartup startup)
         {
-            if (startup == null)
+            _ = startup ?? throw new ArgumentNullException(nameof(startup));
+
+            return hostBuilder.ConfigureServices(serviceCollection =>
             {
-                throw new ArgumentNullException(nameof(startup));
-            }
+                startup.ConfigureServices(serviceCollection);
 
-            hostBuilder.ConfigureServices(s => startup.ConfigureServices(s));
+                serviceCollection.AddSingleton(_ => startup);
 
-            hostBuilder.ConfigureServices(s => s.AddSingleton(_ => startup));
-
-            hostBuilder.ConfigureServices(s =>
-            {
-                if (!s.Any(p => p.ServiceType == typeof(IModuleClient)))
+                if (!serviceCollection.Any(p => p.ServiceType == typeof(IModuleClient)))
                 {
-                    s.AddSingleton(CreateModuleClient);
+                    serviceCollection.AddSingleton(CreateModuleClient);
                 }
             });
-
-            return hostBuilder;
         }
 
         private static IModuleClient CreateModuleClient(IServiceProvider serviceProvider)

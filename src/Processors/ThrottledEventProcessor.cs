@@ -16,7 +16,7 @@ namespace Bader.Edge.ModuleHost
         private static readonly byte[] Comma = Encoding.UTF8.GetBytes(new[] { ',' });
         private static readonly byte[] SquareBracketClose = Encoding.UTF8.GetBytes(new[] { ']' });
         private static readonly byte[] SquareBracketOpen = Encoding.UTF8.GetBytes(new[] { '[' });
-        private readonly ILogger<ThrottledEventProcessor> _logger;
+        private readonly ILogger _logger;
         private readonly IModuleClient _moduleClient;
         private readonly BlockingCollection<Message> _queue;
         private readonly CancellationToken _shutdownToken;
@@ -41,12 +41,17 @@ namespace Bader.Edge.ModuleHost
 
         internal int MessageHeaderSize { get; }
 
-        public ThrottledEventProcessor(IModuleClient moduleClient, int capacity, TimeSpan timeout, ISystemTime systemTime, ILogger<ThrottledEventProcessor> logger, CancellationToken shutdownToken)
-            : this(moduleClient, capacity, 1024 * 4, timeout, systemTime, logger, shutdownToken)
+        public ThrottledEventProcessor(IModuleClient moduleClient, int capacity, TimeSpan timeout, ILogger logger, CancellationToken shutdownToken)
+            : this(moduleClient, capacity, 1024 * 4, timeout, new SystemTime(), logger, shutdownToken)
         {
         }
 
-        public ThrottledEventProcessor(IModuleClient moduleClient, int capacity, int maxMessageSize, TimeSpan timeout, ISystemTime systemTime, ILogger<ThrottledEventProcessor> logger, CancellationToken shutdownToken)
+        public ThrottledEventProcessor(IModuleClient moduleClient, int capacity, int maxMessageSize, TimeSpan timeout, ILogger logger, CancellationToken shutdownToken)
+            : this(moduleClient, capacity, maxMessageSize, timeout, new SystemTime(), logger, shutdownToken)
+        {
+        }
+
+        internal ThrottledEventProcessor(IModuleClient moduleClient, int capacity, int maxMessageSize, TimeSpan timeout, ISystemTime systemTime, ILogger logger, CancellationToken shutdownToken)
         {
             _queue = new BlockingCollection<Message>(capacity);
             _moduleClient = moduleClient;
@@ -71,7 +76,11 @@ namespace Bader.Edge.ModuleHost
 
         public bool EnqueueEvent(Message message)
         {
+            _ = message ?? throw new ArgumentNullException(nameof(message));
+
+            _logger.LogTrace("Enqueueing event with message id {MessageId}", message.MessageId);
             Interlocked.Increment(ref _enqueueCount);
+
             if (!_queue.TryAdd(message))
             {
                 Interlocked.Increment(ref _enqueueFailCount);
@@ -93,6 +102,8 @@ namespace Bader.Edge.ModuleHost
             var applicationPropertySize = 0;
             Message? message = null;
 
+            _logger.LogInformation("Starting throttled event processor");
+
             while (!_shutdownToken.IsCancellationRequested)
             {
                 try
@@ -105,10 +116,13 @@ namespace Bader.Edge.ModuleHost
                         continue;
                     }
 
+                    _logger.LogTrace("Processing event with message id {MessageId}", message.MessageId);
+
                     var messageBytes = (message.BodyStream as MemoryStream)?.ToArray() ?? throw new InvalidOperationException("Invalid body stream in message");
                     var messagePropertiesSize = GetApplicationPropertiesLength(properties, message);
 
                     var aggregatedMessageSize = MessageHeaderSize + applicationPropertySize + messagePropertiesSize + messageBytes.Length + memoryStream.Length;
+                    _logger.LogTrace("Current aggregation size: {AggregationSize}", aggregatedMessageSize);
 
                     // check if we would either exceed max message size or the next send time
                     var shouldSendMessage = aggregatedMessageSize > MaxMessageSize || _systemTime.UtcNow >= nextSendTime;
@@ -126,8 +140,14 @@ namespace Bader.Edge.ModuleHost
 
                         try
                         {
+                            _logger.LogTrace("Sending aggregated message...");
+
                             await _moduleClient.SendEventAsync(hubMessage, _shutdownToken).ConfigureAwait(false);
                             Interlocked.Increment(ref _sendCount);
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.LogError(ex, "Failed to send aggregated message");
                         }
                         finally
                         {
@@ -144,6 +164,8 @@ namespace Bader.Edge.ModuleHost
                             nextSendTime = _systemTime.UtcNow + Timeout;
                         }
                     }
+
+                    _logger.LogTrace("Throtting message and waiting for next");
 
                     if (memoryStream.Length > 1)
                     {
