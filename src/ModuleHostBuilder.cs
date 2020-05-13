@@ -33,7 +33,11 @@ namespace Microsoft.Extensions.Hosting
                 .UseConsoleLifetime();
 
         /// <inheritdoc />
-        public IHost Build() => _hostBuilder.Build();
+        public IHost Build()
+        {
+            var host = _hostBuilder.Build();
+            host.
+        }
 
         /// <inheritdoc />
         public IHostBuilder ConfigureAppConfiguration(Action<HostBuilderContext, IConfigurationBuilder> configureDelegate) =>
