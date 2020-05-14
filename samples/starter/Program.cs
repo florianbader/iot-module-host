@@ -28,6 +28,7 @@ namespace Starter
 
             Log.Logger = new LoggerConfiguration()
                 .ReadFrom.Configuration(configuration)
+                .MinimumLevel.Verbose()
                 .Enrich.WithExceptionDetails()
                 .Enrich.FromLogContext()
                 .WriteTo.Console()

@@ -19,46 +19,80 @@ namespace Bader.Edge.ModuleHost
         private readonly ILogger _logger;
         private readonly IModuleClient _moduleClient;
         private readonly BlockingCollection<Message> _queue;
-        private readonly CancellationToken _shutdownToken;
         private readonly ISystemTime _systemTime;
+        private CancellationTokenSource _cancellationTokenSource;
         private int _enqueueCount;
         private int _enqueueFailCount;
         private bool _isDisposing;
         private int _processedCount;
         private int _sendCount;
 
+        /// <summary>
+        /// Gets the enqueued messages count.
+        /// </summary>
         public int EnqueueCount => _enqueueCount;
 
+        /// <summary>
+        /// Gets the enqueued messages fail count.
+        /// </summary>
         public int EnqueueFailCount => _enqueueFailCount;
 
+        /// <summary>
+        /// Gets the max message size after which the throttled messages are sent at the latest.
+        /// </summary>
         public int MaxMessageSize { get; }
 
+        /// <summary>
+        /// Gets the processed events count.
+        /// </summary>
         public int ProcessedCount => _processedCount;
 
+        /// <summary>
+        /// Gets the send messages count.
+        /// </summary>
         public int SendCount => _sendCount;
 
+        /// <summary>
+        /// Gets the timeout after which the throttled messages are sent at the latest.
+        /// </summary>
         public TimeSpan Timeout { get; }
 
         internal int MessageHeaderSize { get; }
 
-        public ThrottledEventProcessor(IModuleClient moduleClient, int capacity, TimeSpan timeout, ILogger logger, CancellationToken shutdownToken)
-            : this(moduleClient, capacity, 1024 * 4, timeout, new SystemTime(), logger, shutdownToken)
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ThrottledEventProcessor"/> class.
+        /// </summary>
+        /// <param name="moduleClient">The module client.</param>
+        /// <param name="capacity">The maximum capacity of the message queue. If the capacity is reached new messages won't get enqueued.</param>
+        /// <param name="timeout">The timeout after which the throttled messages are sent at the latest.</param>
+        /// <param name="logger">The logger.</param>
+        public ThrottledEventProcessor(IModuleClient moduleClient, int capacity, TimeSpan timeout, ILogger logger)
+            : this(moduleClient, capacity, 1024 * 4, timeout, new SystemTime(), logger)
         {
         }
 
-        public ThrottledEventProcessor(IModuleClient moduleClient, int capacity, int maxMessageSize, TimeSpan timeout, ILogger logger, CancellationToken shutdownToken)
-            : this(moduleClient, capacity, maxMessageSize, timeout, new SystemTime(), logger, shutdownToken)
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ThrottledEventProcessor"/> class.
+        /// </summary>
+        /// <param name="moduleClient">The module client.</param>
+        /// <param name="capacity">The maximum capacity of the message queue. If the capacity is reached new messages won't get enqueued.</param>
+        /// <param name="maxMessageSize">The maximum message size after which the throttled messages are sent at the latest. </param>
+        /// <param name="timeout">The timeout after which the throttled messages are sent at the latest.</param>
+        /// <param name="logger">The logger.</param>
+        public ThrottledEventProcessor(IModuleClient moduleClient, int capacity, int maxMessageSize, TimeSpan timeout, ILogger logger)
+            : this(moduleClient, capacity, maxMessageSize, timeout, new SystemTime(), logger)
         {
         }
 
-        internal ThrottledEventProcessor(IModuleClient moduleClient, int capacity, int maxMessageSize, TimeSpan timeout, ISystemTime systemTime, ILogger logger, CancellationToken shutdownToken)
+        internal ThrottledEventProcessor(IModuleClient moduleClient, int capacity, int maxMessageSize, TimeSpan timeout, ISystemTime systemTime, ILogger logger)
         {
             _queue = new BlockingCollection<Message>(capacity);
             _moduleClient = moduleClient;
             Timeout = timeout;
             _systemTime = systemTime;
             _logger = logger;
-            _shutdownToken = shutdownToken;
+
+            _cancellationTokenSource = new CancellationTokenSource();
 
             // System properties size: MessageId (max 128 bytes) + sequence number (ulong) + expiry date (DateTime)
             MessageHeaderSize = 128 + sizeof(ulong) + _systemTime.UtcNow.ToString(CultureInfo.InvariantCulture).Length;
@@ -74,11 +108,15 @@ namespace Bader.Edge.ModuleHost
             GC.SuppressFinalize(this);
         }
 
+        /// <summary>
+        /// Enqueue a new message. The message will automatically be disposed after it is sent. If the enqueue fails the message won't get disposed.
+        /// </summary>
+        /// <param name="message">The message.</param>
+        /// <returns>Whether the enqueue of the messages was successfull.</returns>
         public bool EnqueueEvent(Message message)
         {
             _ = message ?? throw new ArgumentNullException(nameof(message));
 
-            _logger.LogTrace("Enqueueing event with message id {MessageId}", message.MessageId);
             Interlocked.Increment(ref _enqueueCount);
 
             if (!_queue.TryAdd(message))
@@ -91,7 +129,57 @@ namespace Bader.Edge.ModuleHost
             return true;
         }
 
-        public async Task StartAsync()
+        /// <summary>
+        /// Start the processor in a new background thread.
+        /// </summary>
+        public void Start()
+            => new Thread(() => StartInternalAsync().Wait())
+            {
+                IsBackground = true,
+            }.Start();
+
+        /// <summary>
+        /// Stops the processor.
+        /// </summary>
+        public void Stop()
+        {
+            _cancellationTokenSource.Cancel();
+            _cancellationTokenSource = new CancellationTokenSource();
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!_isDisposing)
+            {
+                if (disposing)
+                {
+                    _queue.Dispose();
+                    _cancellationTokenSource.Dispose();
+                }
+
+                _isDisposing = true;
+            }
+        }
+
+        private int GetApplicationPropertiesLength(IDictionary<string, string> properties, Message message)
+        {
+            var applicationPropertySize = 0;
+
+            foreach (var property in message.Properties.Keys)
+            {
+                if (!properties.ContainsKey(property) && message.Properties[property] != null)
+                {
+                    properties.Add(property, message.Properties[property]);
+
+                    applicationPropertySize += property.Length;
+                    applicationPropertySize += message.Properties[property].Length;
+                }
+            }
+
+            return applicationPropertySize;
+        }
+
+        private async Task StartInternalAsync()
         {
             var nextSendTime = _systemTime.UtcNow + Timeout;
 
@@ -102,21 +190,19 @@ namespace Bader.Edge.ModuleHost
             var applicationPropertySize = 0;
             Message? message = null;
 
-            _logger.LogInformation("Starting throttled event processor");
+            _logger.LogDebug("Starting throttled event processor");
 
-            while (!_shutdownToken.IsCancellationRequested)
+            while (!_cancellationTokenSource.Token.IsCancellationRequested)
             {
                 try
                 {
                     var millisecondsTimeout = (int)nextSendTime.Subtract(_systemTime.UtcNow).TotalMilliseconds;
-                    var hasMessage = _queue.TryTake(out message, millisecondsTimeout, _shutdownToken);
+                    var hasMessage = _queue.TryTake(out message, millisecondsTimeout, _cancellationTokenSource.Token);
 
                     if (!hasMessage)
                     {
                         continue;
                     }
-
-                    _logger.LogTrace("Processing event with message id {MessageId}", message.MessageId);
 
                     var messageBytes = (message.BodyStream as MemoryStream)?.ToArray() ?? throw new InvalidOperationException("Invalid body stream in message");
                     var messagePropertiesSize = GetApplicationPropertiesLength(properties, message);
@@ -140,9 +226,9 @@ namespace Bader.Edge.ModuleHost
 
                         try
                         {
-                            _logger.LogTrace("Sending aggregated message...");
+                            _logger.LogTrace("Throttling criteria met, sending aggregated message...");
 
-                            await _moduleClient.SendEventAsync(hubMessage, _shutdownToken).ConfigureAwait(false);
+                            await _moduleClient.SendEventAsync(hubMessage, _cancellationTokenSource.Token).ConfigureAwait(false);
                             Interlocked.Increment(ref _sendCount);
                         }
                         catch (Exception ex)
@@ -165,7 +251,7 @@ namespace Bader.Edge.ModuleHost
                         }
                     }
 
-                    _logger.LogTrace("Throtting message and waiting for next");
+                    _logger.LogTrace("Throttling message and waiting for next message.");
 
                     if (memoryStream.Length > 1)
                     {
@@ -173,7 +259,7 @@ namespace Bader.Edge.ModuleHost
                     }
 
                     // append all properties of the current message if they do not already exist
-                    // TODO: Make this behaviour public so the user can overwrite it.
+                    // TODO: Make this behavior public so the user can overwrite it.
                     foreach (var property in message.Properties.Keys)
                     {
                         if (!properties.ContainsKey(property) && message.Properties[property] != null)
@@ -202,37 +288,6 @@ namespace Bader.Edge.ModuleHost
             }
 
             memoryStream?.Dispose();
-        }
-
-        protected virtual void Dispose(bool disposing)
-        {
-            if (!_isDisposing)
-            {
-                if (disposing)
-                {
-                    _queue.Dispose();
-                }
-
-                _isDisposing = true;
-            }
-        }
-
-        private int GetApplicationPropertiesLength(IDictionary<string, string> properties, Message message)
-        {
-            var applicationPropertySize = 0;
-
-            foreach (var property in message.Properties.Keys)
-            {
-                if (!properties.ContainsKey(property) && message.Properties[property] != null)
-                {
-                    properties.Add(property, message.Properties[property]);
-
-                    applicationPropertySize += property.Length;
-                    applicationPropertySize += message.Properties[property].Length;
-                }
-            }
-
-            return applicationPropertySize;
         }
     }
 }

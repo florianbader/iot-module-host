@@ -1,9 +1,11 @@
+using System;
 using System.Threading.Tasks;
 using Bader.Edge.ModuleHost;
 using Microsoft.Azure.Devices.Client;
 using Microsoft.Azure.Devices.Shared;
 using Microsoft.Extensions.DependencyInjection;
 using Serilog;
+using Starter.Timers;
 
 namespace Starter
 {
@@ -32,6 +34,8 @@ namespace Starter
 
             // 2. Set the EdgeHubConnectionString environment variable which is used by the module client.
             // Environment.SetEnvironmentVariable("EdgeHubConnectionString", "HostName=<Host Name>;SharedAccessKeyName=<Key Name>;SharedAccessKey=<SAS Key>")
+
+            services.AddHostedTimerService<MessageReader>();
 
             Log.Information("ConfigureServices");
         }

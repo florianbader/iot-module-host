@@ -1,4 +1,4 @@
-FROM mcr.microsoft.com/dotnet/core/runtime:3.1 AS base
+FROM mcr.microsoft.com/dotnet/core/runtime:3.1
 
 RUN apt-get update && \
     apt-get install -y --no-install-recommends unzip procps && \
@@ -8,8 +8,7 @@ RUN useradd -ms /bin/bash moduleuser
 USER moduleuser
 RUN curl -sSL https://aka.ms/getvsdbgsh | bash /dev/stdin -v latest -l ~/vsdbg
 
-FROM base
 WORKDIR /app
 COPY ./out ./
 
-ENTRYPOINT ["dotnet", "starter.dll"]
+ENTRYPOINT ["dotnet", "Starter.dll"]

@@ -4,6 +4,11 @@
     <TargetFramework>netcoreapp3.1</TargetFramework>
     <TreatWarningsAsErrors>False</TreatWarningsAsErrors>
   </PropertyGroup>
+  <ItemGroup>
+    <Compile Remove="out\**" />
+    <EmbeddedResource Remove="out\**" />
+    <None Remove="out\**" />
+  </ItemGroup>
 
   <ItemGroup>
     <ProjectCapability Include="AzureIoTEdgeModule" />
