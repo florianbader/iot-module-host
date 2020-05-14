@@ -17,17 +17,41 @@ namespace Microsoft.Extensions.Hosting
         /// <param name="hostBuilder">The host builder.</param>
         /// <returns>The host builder.</returns>
         public static IHostBuilder UseStartup<TStartup>(this IHostBuilder hostBuilder) where TStartup : class
-            => hostBuilder.ConfigureServices(serviceCollection =>
+        {
+            var startup = typeof(IStartup).IsAssignableFrom(typeof(TStartup))
+                ? Activator.CreateInstance<TStartup>() as IStartup
+                : new ConventionalStartup(typeof(TStartup));
+
+            if (startup is null)
+            {
+                throw new InvalidOperationException("Could not create startup implementation");
+            }
+
+            return hostBuilder.UseStartup(startup);
+        }
+
+        /// <summary>
+        /// Uses the given instance as the start up class for the edge module.
+        /// </summary>
+        /// <param name="hostBuilder">The host builder.</param>
+        /// <param name="startup">The instance of the start up class.</param>
+        /// <returns>The host builder.</returns>
+        internal static IHostBuilder UseStartup(this IHostBuilder hostBuilder, IStartup startup)
+        {
+            _ = startup ?? throw new ArgumentNullException(nameof(startup));
+
+            return hostBuilder.ConfigureServices(serviceCollection =>
             {
                 startup.ConfigureServices(serviceCollection);
 
-                serviceCollection.AddSingleton<IStartup>(typeof(TStartup));
+                serviceCollection.AddSingleton(_ => startup);
 
                 if (!serviceCollection.Any(p => p.ServiceType == typeof(IModuleClient)))
                 {
                     serviceCollection.AddSingleton(CreateModuleClient);
                 }
             });
+        }
 
         private static IModuleClient CreateModuleClient(IServiceProvider serviceProvider)
         {
