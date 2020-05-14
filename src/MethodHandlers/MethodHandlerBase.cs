@@ -53,6 +53,7 @@ namespace Bader.Edge.ModuleHost
         /// Returns a method response for a bad request.
         /// </summary>
         /// <param name="errorMessage">The error message.</param>
+        /// <returns>A method response with status code 400 and the given error message.</returns>
         protected MethodResponse BadRequest(string errorMessage)
             => new MethodResponse(Encoding.UTF8.GetBytes(errorMessage), (int)HttpStatusCode.BadRequest);
 
@@ -60,6 +61,7 @@ namespace Bader.Edge.ModuleHost
         /// Returns a method response for an error.
         /// </summary>
         /// <param name="errorMessage">The error message.</param>
+        /// <returns>A method response with status code 500 and the given error message.</returns>
         protected MethodResponse Error(string errorMessage)
             => new MethodResponse(Encoding.UTF8.GetBytes(errorMessage), (int)HttpStatusCode.InternalServerError);
 
@@ -73,6 +75,7 @@ namespace Bader.Edge.ModuleHost
         /// <summary>
         /// Returns a method response for a success.
         /// </summary>
+        /// <returns>A method response with status code 200.</returns>
         protected MethodResponse Ok() => new MethodResponse((int)HttpStatusCode.OK);
     }
 }

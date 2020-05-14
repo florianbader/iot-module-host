@@ -8,38 +8,28 @@ using Microsoft.Azure.Devices.Client;
 using Microsoft.Extensions.Logging;
 using Moq;
 using Xunit;
-using Xunit.Abstractions;
 
 namespace Bader.Edge.ModuleHost.Tests.Processors
 {
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "Will be disposed in enqueue event.")]
     public class ThrottledEventProcessorTests : IDisposable
     {
-        private readonly CancellationTokenSource _cancellationTokenSource;
         private readonly DateTime _defaultSystemTime;
         private readonly Mock<IModuleClient> _moduleClientMock;
         private readonly ThrottledEventProcessor _processor;
         private readonly Mock<ISystemTime> _systemTimeMock;
-        private readonly ITestOutputHelper _testOutputHelper;
 
-        public ThrottledEventProcessorTests(ITestOutputHelper testOutputHelper)
+        public ThrottledEventProcessorTests()
         {
-            _testOutputHelper = testOutputHelper;
-
             _moduleClientMock = new Mock<IModuleClient>();
 
             _defaultSystemTime = new DateTime(2020, 1, 1, 0, 0, 0);
             _systemTimeMock = new Mock<ISystemTime>();
             _systemTimeMock.SetupGet(s => s.UtcNow).Returns(_defaultSystemTime);
 
-            _cancellationTokenSource = new CancellationTokenSource();
+            _processor = new ThrottledEventProcessor(_moduleClientMock.Object, 100, 1024 * 4, TimeSpan.FromSeconds(60), _systemTimeMock.Object, Mock.Of<ILogger<ThrottledEventProcessor>>());
 
-            _processor = new ThrottledEventProcessor(_moduleClientMock.Object, 100, 1024 * 4, TimeSpan.FromSeconds(60), _systemTimeMock.Object, Mock.Of<ILogger<ThrottledEventProcessor>>(), _cancellationTokenSource.Token);
-
-            new Thread(() => _processor.StartAsync().Wait())
-            {
-                IsBackground = true,
-            }.Start();
+            _processor.Start();
         }
 
         [Fact]
@@ -66,12 +56,7 @@ namespace Bader.Edge.ModuleHost.Tests.Processors
             _moduleClientMock.Verify(m => m.SendEventAsync(It.IsAny<Message>()), Times.Never);
         }
 
-        public void Dispose()
-        {
-            _cancellationTokenSource.Cancel();
-            _processor.Dispose();
-            _cancellationTokenSource.Dispose();
-        }
+        public void Dispose() => _processor.Dispose();
 
         [Fact]
         public void MessagePropertiesShouldBeConcatenated()

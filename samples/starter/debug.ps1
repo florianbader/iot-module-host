@@ -1,2 +1,5 @@
 .\build.ps1
-if ($?) { & "iotedgehubdev" start -d "./samples/starter/deployment.json" -v }
+
+if ($?) {
+    iotedgehubdev start -d ./deployment.json -v
+}

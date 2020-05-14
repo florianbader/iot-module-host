@@ -50,6 +50,7 @@ namespace Bader.Edge.ModuleHost
         /// <summary>
         /// Returns a message response abandoned.
         /// </summary>
+        /// <returns>A method response abandoned.</returns>
         protected MessageResponse Error() => MessageResponse.Abandoned;
 
         /// <summary>
@@ -62,6 +63,7 @@ namespace Bader.Edge.ModuleHost
         /// <summary>
         /// Returns a message response completed.
         /// </summary>
+        /// <returns>A message response completed.</returns>
         protected MessageResponse Ok() => MessageResponse.Completed;
     }
 }
