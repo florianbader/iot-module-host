@@ -143,8 +143,8 @@ public class MessageReader : HostedTimerService
         : base(interval: TimeSpan.FromSeconds(60), shouldCallInitially: true, shouldWaitForElapsedToComplete: true)
     {
         // max capacity = 1000, timeout = 60 seconds 
-        _throttledEventProcessor = new ThrottledEventProcessor(moduleClient, 1000, TimeSpan.FromSeconds(60),
-            logger, CancellationToken);
+        _throttledEventProcessor = new ThrottledEventProcessor(moduleClient, 1000, TimeSpan.FromSeconds(60), logger);
+        _throttledEventProcessor.Start();
     }
 
     protected override async Task ElapsedAsync(CancellationToken cancellationToken)
