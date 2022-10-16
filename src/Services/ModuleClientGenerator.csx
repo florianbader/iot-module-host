@@ -1,4 +1,4 @@
-#! "netcoreapp3.1"
+#! "net6.0"
 #r "nuget: Microsoft.Azure.Devices.Client,1.*"
 
 using System;
@@ -10,7 +10,8 @@ using Microsoft.Azure.Devices.Client;
 
 string GetTypeName(Type type)
 {
-    if (type.Name == "Void") return "void";
+    if (type.Name == "Void")
+        return "void";
 
     if (type.IsGenericType)
     {
@@ -32,11 +33,11 @@ string Generate(bool isInterface = false)
     {
         if (property.CanRead && property.CanWrite)
         {
-            sourceCodeBuilder.AppendLine($"        {(!isInterface ? "public " : "")}{GetTypeName(property.PropertyType)} {property.Name}{(!isInterface ? $" {{ get => _moduleClient.{property.Name}; set => _moduleClient.{property.Name} = value; }}" : " { get; set; }")}");
+            sourceCodeBuilder.AppendLine($"     {(!isInterface ? "public " : "")}{GetTypeName(property.PropertyType)} {property.Name}{(!isInterface ? $" {{ get => _moduleClient.{property.Name}; set => _moduleClient.{property.Name} = value; }}" : " { get; set; }")}");
         }
         else
         {
-            sourceCodeBuilder.AppendLine($"        {(!isInterface ? "public " : "")}{GetTypeName(property.PropertyType)} {property.Name}{(!isInterface ? $" {{ get => _moduleClient.{property.Name}; }}" : " { get; }")}");
+            sourceCodeBuilder.AppendLine($"     {(!isInterface ? "public " : "")}{GetTypeName(property.PropertyType)} {property.Name}{(!isInterface ? $" {{ get => _moduleClient.{property.Name}; }}" : " { get; }")}");
         }
     }
 
@@ -49,7 +50,7 @@ string Generate(bool isInterface = false)
         var parameters2 = string.Join(", ", method.GetParameters()
             .Select(p => $"{p.Name}"));
 
-        sourceCodeBuilder.AppendLine($"        {(!isInterface ? "public " : "")}{GetTypeName(method.ReturnType)} {method.Name}({parameters}){(!isInterface ? $" => _moduleClient.{method.Name}({parameters2});" : ";")}");
+        sourceCodeBuilder.AppendLine($"     {(!isInterface ? "public " : "")}{GetTypeName(method.ReturnType)} {method.Name}({parameters}){(!isInterface ? $" => _moduleClient.{method.Name}({parameters2});" : ";")}");
     }
 
     return sourceCodeBuilder.ToString();
@@ -59,28 +60,24 @@ string Generate(bool isInterface = false)
 File.WriteAllText("ModuleClient.cs", $@"// THIS DOCUMENT IS GENERATED, ALL CHANGES WILL GET OVERWRITTEN!
 #nullable disable
 
-namespace Bader.Edge.ModuleHost
-{{
-    [System.CodeDom.Compiler.GeneratedCode(""ModuleClientGenerator.csx"", ""1.0"")]
-    public class ModuleClient : IModuleClient
-    {{
-        private Microsoft.Azure.Devices.Client.ModuleClient _moduleClient;
+namespace Bader.Edge.ModuleHost;
 
-        public ModuleClient(Microsoft.Azure.Devices.Client.ModuleClient moduleClient)
-        {{
-            _moduleClient = moduleClient;
-        }}
+[System.CodeDom.Compiler.GeneratedCode(""ModuleClientGenerator.csx"", ""1.0"")]
+public class ModuleClient : IModuleClient
+{{
+    private Microsoft.Azure.Devices.Client.ModuleClient _moduleClient;
+
+    public ModuleClient(Microsoft.Azure.Devices.Client.ModuleClient moduleClient) => _moduleClient = moduleClient;
 
 {Generate()}
-    }}
 }}");
 
 // Interface
-File.WriteAllText("IModuleClient.cs", $@"// THIS DOCUMENT IS GENERATED, ALL CHANGES WILL GET OVERWRITTEN!
-namespace
+File.AppendAllText("ModuleClient.cs", $@"
+
+[System.CodeDom.Compiler.GeneratedCode(""ModuleClientGenerator.csx"", ""1.0"")]
+public interface IModuleClient
 {{
-    public interface IModuleClient
-    {{
 {Generate(true)}
-    }}
-}}");
+}}
+");

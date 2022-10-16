@@ -1,5 +1,5 @@
 .\build.ps1
 
 if ($?) {
-    iotedgehubdev start -d ./deployment.json -v
+    iotedgehubdev start -d ./deployment.debug.json -v
 }

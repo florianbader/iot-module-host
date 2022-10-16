@@ -7,24 +7,31 @@ IoT Module Host is a generic host implementation for IoT Edge modules. It makes 
 
 The solution consists of the following features:
 
-* [Startup class](#Startup)
-  * dependency injection
-  * configuration of module client
-  * desired property update
-  * connection status change
-* [Define message handlers in classes](#Message-Handlers)
-* [Define method handlers in classes](#Method-Handlers)
-* [Define async timers for periodic tasks](#Async-Timers--Throttled-Event-Processor)
-* [Throttled event processor for efficient message usage](#Async-Timers--Throttled-Event-Processor)
-* [Module client wrapper with interface to make testing easier](#Module-Client-Mock)
+- [IoT Edge Module Generic Host](#iot-edge-module-generic-host)
+  - [Getting Started](#getting-started)
+    - [Prerequisites](#prerequisites)
+    - [Installing](#installing)
+  - [Features](#features)
+    - [Startup](#startup)
+    - [Message Handlers](#message-handlers)
+    - [Method Handlers](#method-handlers)
+    - [Desired properties changed Handlers](#desired-properties-changed-handlers)
+    - [Async Timers / Batch Event Processor](#async-timers--batch-event-processor)
+    - [Module Client Mock](#module-client-mock)
+  - [Sample](#sample)
+  - [Contributing](#contributing)
+  - [Versioning](#versioning)
+  - [License](#license)
 
 
 ## Getting Started
 
 ### Prerequisites
-[.NET Core 3.1+ SDK](https://www.microsoft.com/net/download/core) must be installed.
+
+[.NET 6+ SDK](https://www.microsoft.com/net/download/core) must be installed.
 
 ### Installing
+
 Install the dotnet-script CLI tool:  
 ``dotnet tool restore``
 
@@ -38,16 +45,6 @@ Build the solution:
 ```csharp
 public class Startup
 {
-    public Task ConfigureAsync(IModuleClient moduleClient)
-    {
-        // Use the ConfigureAsync method to configure the module client.
-        // The module client is not connected yet. Use this method to save the instance of the module client.
-        // _moduleClient = moduleClient;
-
-        Log.Information("Configure");
-        return Task.CompletedTask;
-    }
-
     public void ConfigureServices(IServiceCollection services)
     {
         // Use the ConfigureServices method to configure services and add new services to the collection.
@@ -74,6 +71,16 @@ public class Startup
         Log.Information("DesiredPropertyUpdateAsync");
         return Task.CompletedTask;
     }
+    
+    public Task InitializeAsync(IServiceProvider serviceProvider)
+    {
+        // Use the InitializeAsync method to initialize your services and the module client.
+        // The module client is not connected yet. Use this method to save the instance of the module client.
+        // _moduleClient = serviceProvider.GetRequiredService<IExtendedModuleClient>();
+
+        Log.Information("Configure");
+        return Task.CompletedTask;
+    }
 }
 ```
 
@@ -92,13 +99,13 @@ public class Input1MessageHandler : MessageHandlerBase
         _logger = logger;
     }
 
-    protected override async Task<MessageResponse> HandleMessageAsync(Message message)
+    protected override async Task<MessageResponse> HandleMessageAsync(Message message, CancellationToken cancellationToken)
     {
         message.Properties["original-connection-module-id"] = message.ConnectionModuleId;
 
         await _moduleClient.SendEventAsync(message).ConfigureAwait(false);
 
-        var json = await JsonDocument.ParseAsync(message.BodyStream).ConfigureAwait(false);
+        var json = await JsonDocument.ParseAsync(message.BodyStream, cancellationToken).ConfigureAwait(false);
         _logger.LogInformation("Received message: {Message}", json.RootElement.ToString());
 
         return Ok();
@@ -121,7 +128,7 @@ public class Method1MethodHandler : MethodHandlerBase
         _logger = logger;
     }
 
-    protected override async Task<MethodResponse> HandleMethodAsync(MethodRequest methodRequest)
+    protected override async Task<MethodResponse> HandleMethodAsync(MethodRequest methodRequest, CancellationToken cancellationToken)
     {
         var json = JsonDocument.Parse(methodRequest.DataAsJson);
         _logger.LogInformation("Received method call '{MethodName}' with payload: {Payload}",
@@ -132,19 +139,42 @@ public class Method1MethodHandler : MethodHandlerBase
 }
 ```
 
-### Async Timers / Throttled Event Processor
+### Desired properties changed Handlers
+
+```csharp
+[DesiredPropertiesChangedHandler("configuration")]
+public class ConfigurationChangedHandler : DesiredPropertiesChangedHandlerBase
+{
+    private readonly IModuleClient _moduleClient;
+    private readonly ILogger<ConfigurationChangedHandler> _logger;
+
+    public Method1MethodHandler(IModuleClient moduleClient, ILogger<ConfigurationChangedHandler> logger) : base(logger)
+    {
+        _moduleClient = moduleClient;
+        _logger = logger;
+    }
+
+    protected override async Task HandleDesiredPropertiesChangedAsync(JToken? token, CancellationToken cancellationToken)
+    {
+        _logger.LogInformation("Received desired properties changed call with payload: {Payload}",
+            token?.ToString());
+    }
+}
+```
+
+### Async Timers / Batch Event Processor
 
 ```csharp
 public class MessageReader : HostedTimerService
 {
-    private readonly ThrottledEventProcessor _throttledEventProcessor;
+    private readonly BatchEventProcessor _batchEventProcessor;
 
     public MessageReader(IModuleClient moduleClient, ILogger<MessageReader> logger)
         : base(interval: TimeSpan.FromSeconds(60), shouldCallInitially: true, shouldWaitForElapsedToComplete: true)
     {
         // max capacity = 1000, timeout = 60 seconds 
-        _throttledEventProcessor = new ThrottledEventProcessor(moduleClient, 1000, TimeSpan.FromSeconds(60), logger);
-        _throttledEventProcessor.Start();
+        _batchEventProcessor = new BatchEventProcessor(moduleClient, 1000, TimeSpan.FromSeconds(60), logger);
+        _batchEventProcessor.Start();
     }
 
     protected override async Task ElapsedAsync(CancellationToken cancellationToken)
@@ -152,7 +182,7 @@ public class MessageReader : HostedTimerService
         var data = await ReadDataFromSomewhereAsync();
 
         var message = MessageFactory.CreateMessage(data);
-        _throttledEventProcessor.EnqueueEvent(message);
+        _batchEventProcessor.EnqueueEvent(message);
     }
 
     private Task<IEnumerable<object>> ReadDataFromSomewhereAsync() => Task.FromResult(Enumerable.Empty<object>());
@@ -168,6 +198,7 @@ moduleClientMock.Verify(m => m.SendEventAsync(It.IsAny<Message>(), It.IsAny<Canc
 ```
 
 ## Sample
+
 See the [sample solution](samples/starter) to see how it works.
 
 ## Contributing

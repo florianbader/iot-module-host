@@ -1,11 +1,8 @@
-using System;
+namespace Bader.Edge.ModuleHost;
 
-namespace Bader.Edge.ModuleHost
+internal interface ISystemTime
 {
-    internal interface ISystemTime
-    {
-        DateTime Now { get; }
+    DateTime Now { get; }
 
-        DateTime UtcNow { get; }
-    }
+    DateTime UtcNow { get; }
 }

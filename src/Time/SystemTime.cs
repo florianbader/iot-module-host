@@ -1,11 +1,8 @@
-using System;
+namespace Bader.Edge.ModuleHost;
 
-namespace Bader.Edge.ModuleHost
+internal class SystemTime : ISystemTime
 {
-    internal class SystemTime : ISystemTime
-    {
-        public DateTime Now => DateTime.Now;
+    public DateTime Now => DateTime.Now;
 
-        public DateTime UtcNow => DateTime.UtcNow;
-    }
+    public DateTime UtcNow => DateTime.UtcNow;
 }
