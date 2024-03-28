@@ -24,6 +24,8 @@ public class DefaultMethodHandler : MethodHandlerBase
         _logger.LogInformation("Received method call '{MethodName}' with payload: {Payload}",
             methodRequest.Name, json.RootElement.ToString());
 
+        await Task.Delay(1000); // Simulate some work
+
         return Ok();
     }
 }

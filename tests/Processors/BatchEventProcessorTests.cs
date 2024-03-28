@@ -6,7 +6,7 @@ namespace Bader.Edge.ModuleHost.Tests.Processors;
 
 [System.Diagnostics.CodeAnalysis.SuppressMessage("Reliability", "IDISP001: Dispose created", Justification = "Will be disposed in enqueue event.")]
 [System.Diagnostics.CodeAnalysis.SuppressMessage("Reliability", "IDISP004: Don't ignore created IDisposable", Justification = "Will be disposed in enqueue event.")]
-public sealed class BatchEventProcessorTests : IDisposable
+public sealed class BatchEventProcessorTests : IAsyncLifetime, IDisposable
 {
     private readonly DateTime _defaultSystemTime;
     private readonly Mock<IModuleClient> _moduleClientMock;
@@ -17,13 +17,11 @@ public sealed class BatchEventProcessorTests : IDisposable
     {
         _moduleClientMock = new Mock<IModuleClient>();
 
-        _defaultSystemTime = new DateTime(2020, 1, 1, 0, 0, 0);
+        _defaultSystemTime = new DateTime(2020, 1, 1, 0, 0, 0, DateTimeKind.Utc);
         _systemTimeMock = new Mock<ISystemTime>();
         _systemTimeMock.SetupGet(s => s.UtcNow).Returns(_defaultSystemTime);
 
-        _processor = new BatchEventProcessor(_moduleClientMock.Object, 100, 1024 * 4, TimeSpan.FromSeconds(60), _systemTimeMock.Object, Mock.Of<ILogger<BatchEventProcessor>>());
-
-        _processor.Start();
+        _processor = new BatchEventProcessor(_moduleClientMock.Object, 100, 1024 * 4, TimeSpan.FromSeconds(2), _systemTimeMock.Object, Mock.Of<ILogger<BatchEventProcessor>>());
     }
 
     [Fact]
@@ -41,7 +39,7 @@ public sealed class BatchEventProcessorTests : IDisposable
     }
 
     [Fact]
-    public void BelowMaxMessageSizeShouldNotSendAMesage()
+    public void BelowMaxMessageSizeShouldNotSendAMessage()
     {
         var message1 = new Message(new byte[1024]);
 
@@ -51,6 +49,18 @@ public sealed class BatchEventProcessorTests : IDisposable
     }
 
     public void Dispose() => _processor.Dispose();
+
+    public Task DisposeAsync()
+    {
+        _processor.Stop();
+        return Task.CompletedTask;
+    }
+
+    public Task InitializeAsync()
+    {
+        _processor.Start();
+        return Task.CompletedTask;
+    }
 
     [Fact]
     public void MessagePropertiesShouldBeConcatenated()

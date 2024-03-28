@@ -41,19 +41,19 @@ public class MessageReader : HostedTimerService
     }
 
     private Task<SensorData> ReadDataFromSomewhereAsync() => Task.FromResult(new SensorData(_random.Next(-15, 40), _random.Next(0, 100)));
-}
 
-public class SensorData
-{
-    public SensorData(decimal temperature, decimal humidity)
+    public class SensorData
     {
-        Temperature = temperature;
-        Humidity = humidity;
+        public SensorData(decimal temperature, decimal humidity)
+        {
+            Temperature = temperature;
+            Humidity = humidity;
+        }
+
+        public decimal Humidity { get; }
+
+        public decimal Temperature { get; }
+
+        public DateTime TimestampUtc { get; } = DateTime.UtcNow;
     }
-
-    public decimal Humidity { get; }
-
-    public decimal Temperature { get; }
-
-    public DateTime TimestampUtc { get; } = DateTime.UtcNow;
 }

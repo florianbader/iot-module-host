@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using Bader.Edge.ModuleHost;
 using Microsoft.Azure.Devices.Client.Transport.Mqtt;
 using Microsoft.Extensions.DependencyInjection;
@@ -81,7 +82,7 @@ public static class ModuleHostBuilderExtensions
         DictionaryKeyPolicy = JsonNamingPolicy.CamelCase,
         PropertyNameCaseInsensitive = true,
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-        IgnoreNullValues = true,
+        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
         AllowTrailingCommas = true,
         IgnoreReadOnlyProperties = true,
         MaxDepth = 32,
@@ -90,13 +91,13 @@ public static class ModuleHostBuilderExtensions
     private static AzureDeviceClient.ModuleClient CreateModuleClient(IServiceProvider serviceProvider)
     {
         var settings = serviceProvider.GetServices<AzureDeviceClient.ITransportSettings>().ToArray();
-        if ((settings?.Length ?? 0) == 0)
+        if (settings.Length == 0)
         {
             var mqttSetting = new MqttTransportSettings(AzureDeviceClient.TransportType.Mqtt_Tcp_Only);
             settings = new[] { mqttSetting };
 
-            var logger = serviceProvider.GetService<ILogger<ModuleHostBuilder>>();
-            logger.LogInformation($"No transport settings found, using MQTT over TCP.");
+            var logger = serviceProvider.GetRequiredService<ILogger<ModuleHostBuilder>>();
+            logger.LogInformation("No transport settings found, using MQTT over TCP.");
         }
 
         var azureModuleClient = AzureDeviceClient.ModuleClient.CreateFromEnvironmentAsync(settings)

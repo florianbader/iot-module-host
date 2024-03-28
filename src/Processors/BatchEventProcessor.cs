@@ -128,10 +128,19 @@ public class BatchEventProcessor : IDisposable
     /// Start the processor in a new background thread.
     /// </summary>
     public void Start()
-        => new Thread(() => StartInternalAsync().Wait())
+    {
+        try
         {
-            IsBackground = true,
-        }.Start();
+            new Thread(() => StartInternalAsync().Wait())
+            {
+                IsBackground = true,
+            }.Start();
+        }
+        catch (TaskCanceledException)
+        {
+            // ignore
+        }
+    }
 
     /// <summary>
     /// Stops the processor.
@@ -143,39 +152,7 @@ public class BatchEventProcessor : IDisposable
         _cancellationTokenSource = new CancellationTokenSource();
     }
 
-    protected virtual void Dispose(bool disposing)
-    {
-        if (!_isDisposing)
-        {
-            if (disposing)
-            {
-                _queue.Dispose();
-                _cancellationTokenSource.Dispose();
-            }
-
-            _isDisposing = true;
-        }
-    }
-
-    private int GetApplicationPropertiesLength(IDictionary<string, string> properties, Message message)
-    {
-        var applicationPropertySize = 0;
-
-        foreach (var property in message.Properties.Keys)
-        {
-            if (!properties.ContainsKey(property) && message.Properties[property] != null)
-            {
-                properties.Add(property, message.Properties[property]);
-
-                applicationPropertySize += property.Length;
-                applicationPropertySize += message.Properties[property].Length;
-            }
-        }
-
-        return applicationPropertySize;
-    }
-
-    private async Task StartInternalAsync()
+    internal async Task StartInternalAsync()
     {
         var nextSendTime = _systemTime.UtcNow + Timeout;
 
@@ -284,5 +261,37 @@ public class BatchEventProcessor : IDisposable
         }
 
         memoryStream?.Dispose();
+    }
+
+    protected virtual void Dispose(bool disposing)
+    {
+        if (!_isDisposing)
+        {
+            if (disposing)
+            {
+                _queue.Dispose();
+                _cancellationTokenSource.Dispose();
+            }
+
+            _isDisposing = true;
+        }
+    }
+
+    private int GetApplicationPropertiesLength(IDictionary<string, string> properties, Message message)
+    {
+        var applicationPropertySize = 0;
+
+        foreach (var property in message.Properties.Keys)
+        {
+            if (!properties.ContainsKey(property) && message.Properties[property] != null)
+            {
+                properties.Add(property, message.Properties[property]);
+
+                applicationPropertySize += property.Length;
+                applicationPropertySize += message.Properties[property].Length;
+            }
+        }
+
+        return applicationPropertySize;
     }
 }

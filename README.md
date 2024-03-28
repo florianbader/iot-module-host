@@ -1,7 +1,7 @@
 # IoT Edge Module Generic Host
 
 [![Nuget (with prereleases)](https://img.shields.io/nuget/vpre/Bader.Edge.ModuleHost)](https://www.nuget.org/packages/Bader.Edge.ModuleHost/)
-[![Build status](https://dev.azure.com/ait-fb/Public/_apis/build/status/IoT/iot-module-host.NuGet)](https://dev.azure.com/ait-fb/Public/_build/latest?definitionId=52?branchName=master)
+[![Build status](https://dev.azure.com/ait-fb/Public/_apis/build/status/IoT/iot-module-host.NuGet)](https://dev.azure.com/ait-fb/Public/_build/latest?definitionId=52?branchName=main)
 
 IoT Module Host is a generic host implementation for IoT Edge modules. It makes it easier to start a new module implementation by taking away the boilerplate code which is required.
 
@@ -23,12 +23,11 @@ The solution consists of the following features:
   - [Versioning](#versioning)
   - [License](#license)
 
-
 ## Getting Started
 
 ### Prerequisites
 
-[.NET 6+ SDK](https://www.microsoft.com/net/download/core) must be installed.
+[.NET 8+ SDK](https://www.microsoft.com/net/download/core) must be installed.
 
 ### Installing
 

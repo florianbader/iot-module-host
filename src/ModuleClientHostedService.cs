@@ -68,7 +68,7 @@ internal sealed class ModuleClientHostedService : IHostedService, IDisposable
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error occurred on startup");
-            throw;
+            throw new InvalidOperationException("Could not startup host", ex);
         }
     }
 
@@ -120,7 +120,7 @@ internal sealed class ModuleClientHostedService : IHostedService, IDisposable
             }
             else
             {
-                _logger.LogTrace("Registering message handlers {MethodHandlerType} for input {inputName}...", inputMessageHandlerTypes, inputName);
+                _logger.LogTrace("Registering message handlers {MethodHandlerType} for input {InputName}...", inputMessageHandlerTypes, inputName);
                 await _moduleClient.SetInputMessageHandlerAsync(inputName,
                     (message, _) => messageHandlerFunc(message), null!).ConfigureAwait(false);
             }

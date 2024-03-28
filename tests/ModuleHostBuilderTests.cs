@@ -7,6 +7,7 @@ namespace Bader.Edge.ModuleHost.Tests;
 public class ModuleHostBuilderTests
 {
     [Fact]
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("IDisposableAnalyzers.Correctness", "IDISP013:Await in using", Justification = "Not disposed until end of test")]
     public async Task StartingHost_ShouldOpenModuleClientConnection()
     {
         var moduleClientMock = new Mock<IModuleClient>();
@@ -20,7 +21,7 @@ public class ModuleHostBuilderTests
             .ConfigureLogging(logging => logging.AddConsole())
             .Build();
 
-        await host.StartAsync().ConfigureAwait(false);
+        await host.StartAsync();
 
         moduleClientMock.Verify(m => m.OpenAsync(), Times.Once);
     }

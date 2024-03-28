@@ -23,7 +23,7 @@ public class Input1MessageHandler : MessageHandlerBase
 
         await _moduleClient.SendEventAsync(message).ConfigureAwait(false);
 
-        var json = await JsonDocument.ParseAsync(message.BodyStream).ConfigureAwait(false);
+        using var json = await JsonDocument.ParseAsync(message.BodyStream).ConfigureAwait(false);
         _logger.LogInformation("Received message: {Message}", json.RootElement.ToString());
 
         return Ok();
