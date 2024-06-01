@@ -16,7 +16,7 @@ public class MqttModuleClientBuilder
     private ILogger _logger = NullLogger.Instance;
     private IEnumerable<MqttRoute> _routes = Enumerable.Empty<MqttRoute>();
 
-    public MqttModuleClientBuilder(string deviceId, string moduleId)
+    public MqttModuleClientBuilder(string deviceId, string moduleId, Uri mqttBrokerUri)
     {
         var clientId = $"{deviceId}.{moduleId}";
 
@@ -24,6 +24,7 @@ public class MqttModuleClientBuilder
             .WithAutoReconnectDelay(TimeSpan.FromSeconds(1))
             .WithClientOptions(new MqttClientOptionsBuilder()
                 .WithClientId(clientId)
+                .WithConnectionUri(mqttBrokerUri)
                 .WithCleanSession()
                 .WithProtocolVersion(MqttProtocolVersion.V500)
                 .Build())

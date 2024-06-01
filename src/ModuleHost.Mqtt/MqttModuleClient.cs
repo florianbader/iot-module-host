@@ -33,7 +33,6 @@ public sealed class MqttModuleClient : IModuleClient, IAsyncDisposable, IDisposa
     private readonly string _twinReportedTopic;
     private readonly string _twinTopic;
     private bool _isDisposed;
-    private IRetryPolicy? _retryPolicy;
     private ConnectionStatusChangesHandler? _statusChangesHandler;
 
     internal MqttModuleClient(string deviceId, string moduleId, IManagedMqttClient mqttClient, ManagedMqttClientOptions options, IEnumerable<MqttRoute> routes, ILogger logger)
@@ -75,11 +74,11 @@ public sealed class MqttModuleClient : IModuleClient, IAsyncDisposable, IDisposa
 
     public Task AbandonAsync(string lockToken) => AbandonAsync(lockToken, default);
 
-    public Task AbandonAsync(string lockToken, CancellationToken cancellationToken) => throw new NotImplementedException();
+    public Task AbandonAsync(string lockToken, CancellationToken cancellationToken) => Task.CompletedTask;
 
     public Task AbandonAsync(Message message) => AbandonAsync(message, default);
 
-    public Task AbandonAsync(Message message, CancellationToken cancellationToken) => throw new NotImplementedException();
+    public Task AbandonAsync(Message message, CancellationToken cancellationToken) => Task.CompletedTask;
 
     public Task CloseAsync() => CloseAsync(default);
 
@@ -87,14 +86,11 @@ public sealed class MqttModuleClient : IModuleClient, IAsyncDisposable, IDisposa
 
     public Task CompleteAsync(string lockToken) => CompleteAsync(lockToken, default);
 
-    public Task CompleteAsync(string lockToken, CancellationToken cancellationToken) => throw new NotImplementedException();
+    public Task CompleteAsync(string lockToken, CancellationToken cancellationToken) => Task.CompletedTask;
 
     public Task CompleteAsync(Message message) => CompleteAsync(message, default);
 
-    public Task CompleteAsync(Message message, CancellationToken cancellationToken)
-    {
-        message.Properties[""]
-    }
+    public Task CompleteAsync(Message message, CancellationToken cancellationToken) => Task.CompletedTask;
 
     [System.Diagnostics.CodeAnalysis.SuppressMessage("IDisposableAnalyzers.Correctness", "IDISP007:Don't dispose injected", Justification = "It's created by the builder so we are responsible for disposing it")]
     public void Dispose()
@@ -168,6 +164,8 @@ public sealed class MqttModuleClient : IModuleClient, IAsyncDisposable, IDisposa
             .WithPayload(message.GetBytes())
             .WithContentType(message.ContentType)
             .WithQualityOfServiceLevel(MqttQualityOfServiceLevel.AtLeastOnce)
+            .WithUserProperty("ModuleId", _moduleId)
+            .WithUserProperty("DeviceId", _deviceId)
             .Build();
 
         foreach (var messageProperty in message.Properties)
@@ -242,7 +240,9 @@ public sealed class MqttModuleClient : IModuleClient, IAsyncDisposable, IDisposa
         return Task.CompletedTask;
     }
 
-    public void SetRetryPolicy(IRetryPolicy retryPolicy) => _retryPolicy = retryPolicy;
+    public void SetRetryPolicy(IRetryPolicy retryPolicy)
+    {
+    }
 
     public Task UpdateReportedPropertiesAsync(TwinCollection reportedProperties) => UpdateReportedPropertiesAsync(reportedProperties, default);
 
@@ -256,6 +256,9 @@ public sealed class MqttModuleClient : IModuleClient, IAsyncDisposable, IDisposa
         var message = new MqttApplicationMessageBuilder()
             .WithTopic(_twinReportedTopic)
             .WithPayload(_twin.Properties.Reported.ToJson())
+            .WithContentType("application/json")
+            .WithUserProperty("ModuleId", _moduleId)
+            .WithUserProperty("DeviceId", _deviceId)
             .Build();
 
         await _mqttClient.EnqueueAsync(message);
@@ -324,6 +327,9 @@ public sealed class MqttModuleClient : IModuleClient, IAsyncDisposable, IDisposa
             var responseMessage = new MqttApplicationMessageBuilder()
                 .WithTopic(applicationMessage.ResponseTopic)
                 .WithCorrelationData(applicationMessage.CorrelationData)
+                .WithContentType("application/json")
+                .WithUserProperty("ModuleId", _moduleId)
+                .WithUserProperty("DeviceId", _deviceId)
                 .WithPayload(response.Result)
                 .Build();
 

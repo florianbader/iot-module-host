@@ -25,6 +25,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\Bader.Edge.ModuleHost.csproj" />
+    <ProjectReference Include="..\..\src\ModuleHost\Bader.Edge.ModuleHost.csproj" />
   </ItemGroup>
 </Project>
