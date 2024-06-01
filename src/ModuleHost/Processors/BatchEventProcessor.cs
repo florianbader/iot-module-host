@@ -157,7 +157,7 @@ public class BatchEventProcessor : IDisposable
         var nextSendTime = _systemTime.UtcNow + Timeout;
 
         var memoryStream = new MemoryStream();
-        memoryStream.Write(SquareBracketOpen, 0, 1);
+        await memoryStream.WriteAsync(SquareBracketOpen, 0, 1);
 
         var properties = new Dictionary<string, string>();
         var applicationPropertySize = 0;
@@ -187,7 +187,7 @@ public class BatchEventProcessor : IDisposable
                 var shouldSendMessage = aggregatedMessageSize > MaxMessageSize || _systemTime.UtcNow >= nextSendTime;
                 if (shouldSendMessage)
                 {
-                    memoryStream.Write(SquareBracketClose, 0, 1);
+                    await memoryStream.WriteAsync(SquareBracketClose, 0, 1);
 
                     // send message
                     var hubMessage = new Message(memoryStream);
@@ -216,9 +216,10 @@ public class BatchEventProcessor : IDisposable
                         properties.Clear();
                         applicationPropertySize = 0;
 
-                        memoryStream.Position = 0;
-                        memoryStream.SetLength(0);
-                        memoryStream.Write(SquareBracketOpen, 0, 1);
+                        await memoryStream.DisposeAsync();
+                        memoryStream = new MemoryStream();
+
+                        await memoryStream.WriteAsync(SquareBracketOpen, 0, 1);
 
                         nextSendTime = _systemTime.UtcNow + Timeout;
                     }
@@ -228,7 +229,7 @@ public class BatchEventProcessor : IDisposable
 
                 if (memoryStream.Length > 1)
                 {
-                    memoryStream.Write(Comma, 0, 1);
+                    await memoryStream.WriteAsync(Comma, 0, 1);
                 }
 
                 // append all properties of the current message if they do not already exist
@@ -246,7 +247,7 @@ public class BatchEventProcessor : IDisposable
                 // if we received an array we assume it is already batched and we just merge the content
                 var offset = messageBytes[0] == SquareBracketOpen[0] ? 1 : 0;
                 var length = messageBytes[0] == SquareBracketOpen[0] ? messageBytes.Length - 2 : messageBytes.Length;
-                memoryStream.Write(messageBytes, offset, length);
+                await memoryStream.WriteAsync(messageBytes, offset, length);
 
                 Interlocked.Increment(ref _processedCount);
             }
@@ -260,7 +261,10 @@ public class BatchEventProcessor : IDisposable
             }
         }
 
-        memoryStream?.Dispose();
+        if (memoryStream is not null)
+        {
+            await memoryStream.DisposeAsync();
+        }
     }
 
     protected virtual void Dispose(bool disposing)
