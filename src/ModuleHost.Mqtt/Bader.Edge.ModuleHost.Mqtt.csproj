@@ -1,0 +1,16 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <RootNamespace>Bader.Edge.ModuleHost.Mqtt</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="MQTTnet" />
+    <PackageReference Include="MQTTnet.Extensions.ManagedClient" />
+    <PackageReference Include="MQTTnet.Extensions.Rpc" />
+  </ItemGroup>
+
+  <ItemGroup>
+   <ProjectReference Include="../ModuleHost/Bader.Edge.ModuleHost.csproj" />
+  </ItemGroup>
+</Project>

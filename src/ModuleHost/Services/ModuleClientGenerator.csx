@@ -1,5 +1,5 @@
 #! "net6.0"
-#r "nuget: Microsoft.Azure.Devices.Client,1.*"
+#r "nuget: Microsoft.Azure.Devices.Client,1.42.3"
 
 using System;
 using System.Linq;
